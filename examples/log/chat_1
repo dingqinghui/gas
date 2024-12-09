@@ -1,0 +1,237 @@
+{"L":"info","T":"2024/12/05 16:30:15.568064+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:30:15.600522+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:30:15.600522+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:30:15.627178+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:30:15.803259+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:30:15.803259+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:30:15.803772+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:30:15.804289+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:32:43.408483+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:32:43.437800+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:32:43.438309+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:32:43.447977+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:32:43.614721+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:32:43.614721+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:32:43.615234+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:32:43.615234+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"error","T":"2024/12/05 16:34:00.851971+0800","C":"consul/provider.go:135","M":"consul health agent err","nodeId":"chat_1","nodeId":"chat_1","status":"pass","error":"Unexpected response code: 500 (failed persisting state for check \"service:chat_1\": failed to rename temp file from \"checks\\\\state\\\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81.tmp\" to \"checks\\\\state\\\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81\": rename checks\\state\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81.tmp checks\\state\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81: Access is denied.)"}
+{"L":"info","T":"2024/12/05 16:34:49.993393+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:34:50.030886+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:34:50.030886+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:34:50.047454+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:34:50.357093+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:34:50.357093+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:34:50.357093+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:34:50.357611+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:38:44.949068+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:38:44.970273+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:38:44.970273+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:38:44.985856+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:38:45.101022+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:38:45.101022+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:38:45.101534+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:38:45.102051+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:42:12.898677+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:42:12.923890+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:42:12.923890+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:42:12.949878+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:42:13.093411+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:42:13.093411+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:42:13.093923+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:42:13.093923+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:45:31.195393+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:45:31.286873+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:45:31.286873+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:45:31.308122+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:45:31.380141+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:45:31.380141+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:45:31.380703+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:45:31.381211+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:46:22.506280+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:46:22.532079+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:46:22.532592+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:46:22.536824+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:46:22.641671+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:46:22.641671+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:46:22.642175+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:46:22.642414+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:49:38.893181+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:49:38.924435+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:49:38.924947+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:49:38.927515+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:49:39.095689+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:49:39.095689+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:49:39.095689+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:49:39.096203+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:52:30.632345+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:52:30.670710+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:52:30.670710+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:52:30.676822+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:52:30.747124+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:52:30.747124+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:52:30.747638+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:52:30.748152+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:53:42.546632+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:53:42.559575+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:53:42.559575+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:53:42.571965+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:53:42.734146+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:53:42.734146+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:53:42.734654+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:53:42.734654+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:54:41.232721+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 16:54:41.244539+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 16:54:41.245051+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:54:41.247610+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 16:54:41.332701+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 16:54:41.332701+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 16:54:41.333259+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 16:54:41.333259+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:03:40.375608+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 17:03:40.408719+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 17:03:40.409231+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:03:40.412816+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 17:03:40.514825+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 17:03:40.514825+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:03:40.515385+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 17:03:40.515385+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:06:20.018731+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 17:06:20.044494+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 17:06:20.044494+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:06:20.064659+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 17:06:20.269983+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 17:06:20.269983+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:06:20.270495+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 17:06:20.270495+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:07:13.382619+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 17:07:13.396608+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 17:07:13.396608+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:07:13.399596+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 17:07:13.459732+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 17:07:13.459732+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 17:07:13.460253+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 17:07:13.460766+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 18:41:18.570739+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/05 18:41:18.618946+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/05 18:41:18.619463+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 18:41:18.661532+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/05 18:41:18.749321+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/05 18:41:18.749321+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/05 18:41:18.749321+0800","C":"rpc/rpc.go:43","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/05 18:41:18.749835+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"error","T":"2024/12/05 18:44:03.379152+0800","C":"consul/provider.go:135","M":"consul health agent err","nodeId":"chat_1","nodeId":"chat_1","status":"pass","error":"Unexpected response code: 500 (failed persisting state for check \"service:chat_1\": failed to rename temp file from \"checks\\\\state\\\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81.tmp\" to \"checks\\\\state\\\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81\": rename checks\\state\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81.tmp checks\\state\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81: Access is denied.)"}
+{"L":"info","T":"2024/12/06 16:13:24.157889+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/06 16:13:24.215333+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/06 16:13:24.215339+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/06 16:13:24.231289+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/06 16:13:24.487767+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/06 16:13:24.487767+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/06 16:13:24.488283+0800","C":"rpc/rpc.go:42","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/06 16:13:24.488801+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:06:14.399508+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 11:06:14.423925+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 11:06:14.424461+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"error","T":"2024/12/09 11:06:14.424985+0800","C":"actor/context.go:39","M":"actor invoker message error","nodeId":"chat_1","pid":1,"methodName":"OnInit","error":"args count err"}
+{"L":"info","T":"2024/12/09 11:06:14.429182+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 11:06:14.502000+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 11:06:14.502000+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:06:14.502000+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 11:06:14.502519+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"error","T":"2024/12/09 11:08:04.999723+0800","C":"consul/provider.go:135","M":"consul health agent err","nodeId":"chat_1","nodeId":"chat_1","status":"pass","error":"Unexpected response code: 500 (failed persisting state for check \"service:chat_1\": failed to rename temp file from \"checks\\\\state\\\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81.tmp\" to \"checks\\\\state\\\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81\": rename checks\\state\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81.tmp checks\\state\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81: Access is denied.)"}
+{"L":"info","T":"2024/12/09 11:09:01.527249+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 11:09:01.544202+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 11:09:01.544800+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:09:01.549455+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 11:09:01.785671+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 11:09:01.785671+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:09:01.785671+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 11:09:01.786191+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:10:50.885197+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 11:10:50.900330+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 11:10:50.900843+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:10:50.915721+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 11:10:51.129133+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:10:51.129133+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 11:10:51.129647+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 11:10:51.129647+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"error","T":"2024/12/09 11:12:13.762856+0800","C":"consul/provider.go:135","M":"consul health agent err","nodeId":"chat_1","nodeId":"chat_1","status":"pass","error":"Unexpected response code: 500 (failed persisting state for check \"service:chat_1\": failed to rename temp file from \"checks\\\\state\\\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81.tmp\" to \"checks\\\\state\\\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81\": rename checks\\state\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81.tmp checks\\state\\dceca4948880e8dd05492b97d89dba63d4f11a78aa40eb4012dd9f79ffb7cf81: The process cannot access the file because it is being used by another process.)"}
+{"L":"info","T":"2024/12/09 11:14:54.197345+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 11:14:54.235328+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 11:14:54.235328+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:14:54.245262+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 11:14:54.353792+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 11:14:54.353792+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:14:54.353799+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 11:14:54.354316+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:23:44.949988+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 11:23:44.983574+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 11:23:44.984089+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:23:45.002236+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 11:23:45.131963+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 11:23:45.131963+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:23:45.132481+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 11:23:45.132481+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"error","T":"2024/12/09 11:23:58.154079+0800","C":"workers/pool.go:54","M":"panic","nodeId":"chat_1","error":"runtime error: index out of range [3] with length 2","stack":"github.com/dingqinghui/gas/workers.(*workers).Try.func1\n\tF:/github/gas/workers/pool.go:54\nruntime.gopanic\n\tC:/Users/fy/go/go1.19.2/pkg/mod/golang.org/toolchain@v0.0.1-go1.22.9.windows-amd64/src/runtime/panic.go:770\nruntime.goPanicIndex\n\tC:/Users/fy/go/go1.19.2/pkg/mod/golang.org/toolchain@v0.0.1-go1.22.9.windows-amd64/src/runtime/panic.go:114\ngithub.com/dingqinghui/gas/actor.(*Router).NewArgsByIndex\n\tF:/github/gas/actor/router.go:107\ngithub.com/dingqinghui/gas/cluster/rpc.(*Rpc).process\n\tF:/github/gas/cluster/rpc/rpc.go:113\ngithub.com/dingqinghui/gas/cluster/rpc.(*Rpc).Run.func1.1\n\tF:/github/gas/cluster/rpc/rpc.go:37\ngithub.com/dingqinghui/gas/workers.(*workers).Try\n\tF:/github/gas/workers/pool.go:57\ngithub.com/dingqinghui/gas/workers.(*workers).Submit.func1\n\tF:/github/gas/workers/pool.go:39\ngithub.com/panjf2000/ants/v2.(*goWorker).run.func1\n\tC:/Users/fy/go/go1.19.2/pkg/mod/github.com/panjf2000/ants/v2@v2.10.0/worker.go:71"}
+{"L":"info","T":"2024/12/09 11:23:58.154079+0800","C":"chat/chat.go:35","M":"ChatService Join","nodeId":"chat_1","message":{"UserId":1},"message":"gate_1.2"}
+{"L":"info","T":"2024/12/09 11:23:58.155123+0800","C":"nats/conn.go:81","M":"nats request","nodeId":"chat_1","topic":"node.gate_1"}
+{"L":"info","T":"2024/12/09 11:25:28.808392+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 11:25:28.843257+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 11:25:28.843257+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:25:28.846861+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 11:25:29.106356+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 11:25:29.106356+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:25:29.106899+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 11:25:29.107403+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:25:37.901958+0800","C":"chat/chat.go:35","M":"ChatService Join","nodeId":"chat_1","message":{"UserId":1},"message":"gate_1.2"}
+{"L":"error","T":"2024/12/09 11:25:37.901958+0800","C":"workers/pool.go:54","M":"panic","nodeId":"chat_1","error":"runtime error: index out of range [2] with length 2","stack":"github.com/dingqinghui/gas/workers.(*workers).Try.func1\n\tF:/github/gas/workers/pool.go:54\nruntime.gopanic\n\tC:/Users/fy/go/go1.19.2/pkg/mod/golang.org/toolchain@v0.0.1-go1.22.9.windows-amd64/src/runtime/panic.go:770\nruntime.goPanicIndex\n\tC:/Users/fy/go/go1.19.2/pkg/mod/golang.org/toolchain@v0.0.1-go1.22.9.windows-amd64/src/runtime/panic.go:114\ngithub.com/dingqinghui/gas/actor.(*Router).NewArgsByIndex\n\tF:/github/gas/actor/router.go:107\ngithub.com/dingqinghui/gas/cluster/rpc.(*Rpc).process\n\tF:/github/gas/cluster/rpc/rpc.go:114\ngithub.com/dingqinghui/gas/cluster/rpc.(*Rpc).Run.func1.1\n\tF:/github/gas/cluster/rpc/rpc.go:37\ngithub.com/dingqinghui/gas/workers.(*workers).Try\n\tF:/github/gas/workers/pool.go:57\ngithub.com/dingqinghui/gas/workers.(*workers).Submit.func1\n\tF:/github/gas/workers/pool.go:39\ngithub.com/panjf2000/ants/v2.(*goWorker).run.func1\n\tC:/Users/fy/go/go1.19.2/pkg/mod/github.com/panjf2000/ants/v2@v2.10.0/worker.go:71"}
+{"L":"info","T":"2024/12/09 11:25:37.902475+0800","C":"nats/conn.go:81","M":"nats request","nodeId":"chat_1","topic":"node.gate_1"}
+{"L":"info","T":"2024/12/09 11:26:50.840735+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 11:26:50.876140+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 11:26:50.876661+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:26:50.880764+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 11:26:50.989328+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 11:26:50.989328+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:26:50.989950+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 11:26:50.990465+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:28:04.406694+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 11:28:04.462190+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 11:28:04.462702+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:28:04.466833+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 11:28:04.877376+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 11:28:04.877376+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:28:04.877892+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 11:28:04.878407+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 11:28:14.202752+0800","C":"chat/chat.go:35","M":"ChatService Join","nodeId":"chat_1","message":{"UserId":1},"message":"gate_1.2"}
+{"L":"info","T":"2024/12/09 11:28:14.202752+0800","C":"nats/conn.go:81","M":"nats request","nodeId":"chat_1","topic":"node.gate_1"}
+{"L":"info","T":"2024/12/09 15:31:49.333487+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 15:31:49.371652+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 15:31:49.371652+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 15:31:49.376824+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 15:31:49.771437+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 15:31:49.771437+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 15:31:49.771437+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 15:31:49.771951+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 15:32:06.396047+0800","C":"chat/chat.go:35","M":"ChatService Join","nodeId":"chat_1","message":{"UserId":1},"message":"gate_1.2"}
+{"L":"info","T":"2024/12/09 15:32:06.396572+0800","C":"nats/conn.go:81","M":"nats request","nodeId":"chat_1","topic":"node.gate_1"}
+{"L":"info","T":"2024/12/09 17:26:25.584048+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 17:26:25.612508+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 17:26:25.612508+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 17:26:25.616115+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 17:26:25.861470+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 17:26:25.861470+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 17:26:25.861986+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 17:26:25.861986+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 17:26:45.830049+0800","C":"chat/chat.go:35","M":"ChatService Join","nodeId":"chat_1","message":{"UserId":1},"message":"gate_1.2"}
+{"L":"info","T":"2024/12/09 17:26:45.831082+0800","C":"nats/conn.go:81","M":"nats request","nodeId":"chat_1","topic":"node.gate_1"}
+{"L":"info","T":"2024/12/09 18:34:39.125604+0800","C":"nats/conn.go:49","M":"nats connect","nodeId":"chat_1","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/09 18:34:39.189130+0800","C":"consul/provider.go:52","M":"consul connect success..","nodeId":"chat_1","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/09 18:34:39.189757+0800","C":"node/node.go:63","M":"node init finish............","nodeId":"chat_1"}
+{"L":"debug","T":"2024/12/09 18:34:39.190272+0800","C":"actor/router.go:72","M":"actor call","nodeId":"chat_1","actor":"*chat.Service","methodName":"OnInit","args":[{"IZLogger":{}}]}
+{"L":"info","T":"2024/12/09 18:34:39.195601+0800","C":"consul/provider.go:65","M":"consul watch begin","nodeId":"chat_1","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/09 18:34:39.321273+0800","C":"consul/provider.go:125","M":"consul node  register ","nodeId":"chat_1","nodeId":"chat_1","nodeName":"clusterName","address":"","port":0,"tags":["ChatService"]}
+{"L":"info","T":"2024/12/09 18:34:39.321273+0800","C":"consul/provider.go:132","M":"consul health check begin","nodeId":"chat_1"}
+{"L":"info","T":"2024/12/09 18:34:39.321790+0800","C":"rpc/rpc.go:45","M":"rpc subscribe","nodeId":"chat_1","topic":"node.chat_1"}
+{"L":"info","T":"2024/12/09 18:34:39.322307+0800","C":"node/node.go:105","M":"node running............","nodeId":"chat_1"}
+{"L":"debug","T":"2024/12/09 18:35:11.581390+0800","C":"actor/router.go:72","M":"actor call","nodeId":"chat_1","actor":"*chat.Service","methodName":"Join","args":[{"UserId":1}]}
+{"L":"info","T":"2024/12/09 18:35:11.581390+0800","C":"chat/chat.go:35","M":"ChatService Join","nodeId":"chat_1","message":{"UserId":1},"message":"gate_1.2"}
+{"L":"info","T":"2024/12/09 18:35:11.581909+0800","C":"nats/conn.go:81","M":"nats request","nodeId":"chat_1","topic":"node.gate_1"}

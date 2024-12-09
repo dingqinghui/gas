@@ -1,0 +1,23 @@
+{
+  "cluster": {
+    "name": "clusterName",
+    "consul": {
+      "address": "127.0.0.1:8500",
+      "watchWaitTime": "3s",
+      "healthTtl": "3s",
+      "deregister": "30s"
+    },
+    "nats": {
+      "urls": "127.0.0.1:4222"
+    }
+  },
+  "log": {
+    "path": "./log/",
+    "level": -1,
+    "printConsole": true
+  },
+  "node": {
+    "id": "client_1",
+    "address": ""
+  }
+}
