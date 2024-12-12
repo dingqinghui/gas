@@ -51,7 +51,7 @@ func (p *ProcessActor) Send(from *api.Pid, methodName string, request interface{
 	return p.mailbox.PostMessage(env)
 }
 
-func (p *ProcessActor) Call(from *api.Pid, methodName string, timeout time.Duration, request, reply any) error {
+func (p *ProcessActor) CallAndWait(from *api.Pid, methodName string, timeout time.Duration, request, reply any) error {
 	if err := p.valid(); err != nil {
 		return err
 	}
@@ -64,6 +64,17 @@ func (p *ProcessActor) Call(from *api.Pid, methodName string, timeout time.Durat
 		return err
 	}
 	return nil
+}
+func (p *ProcessActor) Call(from *api.Pid, methodName string, timeout time.Duration, request, reply any) (api.IActorWaiter, error) {
+	if err := p.valid(); err != nil {
+		return nil, err
+	}
+	w := newWaiter(timeout)
+	mbm := NewMailBoxMessage(from, methodName, w, request, reply)
+	if err := p.mailbox.PostMessage(mbm); err != nil {
+		return nil, err
+	}
+	return w, nil
 }
 
 func (p *ProcessActor) Stop() error {

@@ -26,6 +26,7 @@ type (
 	IRpc interface {
 		IModule
 		IActorSender
+		SetSerializer(serializer ISerializer)
 	}
 
 	IDiscovery interface {

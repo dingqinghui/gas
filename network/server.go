@@ -15,6 +15,7 @@ import (
 	"github.com/dingqinghui/gas/extend/xerror"
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/panjf2000/gnet/v2"
+	"go.uber.org/zap"
 )
 
 func NewListener(node api.INode, protoAddr string, options ...Option) api.INetServer {
@@ -63,6 +64,8 @@ func (b *udpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 		session = newSession(b, b.meta, c)
 	}
 	if err := session.Traffic(c); err != nil {
+		b.Log().Error("udp server traffic err",
+			zap.Uint64("sessionId", session.ID()), zap.Error(err))
 		return gnet.Close
 	}
 	return
@@ -107,6 +110,9 @@ func (b *tcpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 	var err error
 	session := b.Ref(c)
 	if session == nil {
+		b.Log().Warn("tcp server traffic err",
+			zap.Uint64("sessionId", session.ID()),
+			zap.Error(api.ErrNetSessionIsNil))
 		return gnet.Close
 	}
 	if err = session.Traffic(c); err != nil {
@@ -120,9 +126,15 @@ func (b *tcpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 func (b *tcpServer) OnClose(c gnet.Conn, err error) (action gnet.Action) {
 	session := b.Ref(c)
 	if session == nil {
+		b.Log().Warn("tcp server onclose err",
+			zap.Uint64("sessionId", session.ID()),
+			zap.Error(api.ErrNetSessionIsNil))
 		return
 	}
 	if err = session.Closed(err); err != nil {
+		b.Log().Error("tcp server onclose err",
+			zap.Uint64("sessionId", session.ID()),
+			zap.Error(err))
 		return 0
 	}
 	return

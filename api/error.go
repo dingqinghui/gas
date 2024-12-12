@@ -27,4 +27,5 @@ var (
 	ErrProcessNotExist         = errors.New("process not exist")
 	ErrActorArgsNum            = errors.New("actor args num error")
 	ErrRpcArgsNum              = errors.New("rpc args num error")
+	ErrNetSessionIsNil         = errors.New("session is nil")
 )

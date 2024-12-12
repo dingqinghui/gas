@@ -19,13 +19,15 @@ func New(node api.INode, msgque api.IRpcMessageQue) api.IRpc {
 	r := new(Rpc)
 	r.SetNode(node)
 	r.msgque = msgque
+	r.serializer = serializer.Json
 	r.Init()
 	return r
 }
 
 type Rpc struct {
 	api.BuiltinModule
-	msgque api.IRpcMessageQue
+	msgque     api.IRpcMessageQue
+	serializer api.ISerializer
 }
 
 func (r *Rpc) Run() {
@@ -47,25 +49,27 @@ func (r *Rpc) Run() {
 
 func (r *Rpc) marshalMsgWithRequest(msg *Message, request interface{}) ([]byte, error) {
 	if request != nil {
-		data, err := serializer.Json.Marshal(request)
+		data, err := r.serializer.Marshal(request)
 		if err != nil {
+			r.Log().Error("rpc marshal request err", zap.Error(err))
 			return nil, err
 		}
 		msg.Data = data
 	}
 
-	buf, err := serializer.Json.Marshal(msg)
+	buf, err := r.serializer.Marshal(msg)
 	if err != nil {
+		r.Log().Error("rpc marshal request err", zap.Error(err))
 		return nil, err
 	}
 	return buf, nil
 }
 
 func (r *Rpc) Send(from, to *api.Pid, methodName string, request interface{}) error {
-
 	msg := newMessage(from, to, methodName, false, 0)
 	buf, err := r.marshalMsgWithRequest(msg, request)
 	if err != nil {
+		r.Log().Error("rpc send  err", zap.Error(err))
 		return err
 	}
 	return r.msgque.Send(genTopic(to.GetNodeId()), buf)
@@ -76,15 +80,18 @@ func (r *Rpc) Call(from, to *api.Pid, methodName string, timeout time.Duration, 
 
 	buf, err := r.marshalMsgWithRequest(msg, request)
 	if err != nil {
+		r.Log().Error("rpc call  err", zap.Error(err))
 		return err
 	}
 
 	replyBuf, err := r.msgque.Call(genTopic(to.GetNodeId()), buf, timeout)
 	if err != nil {
+		r.Log().Error("rpc call  err", zap.Error(err))
 		return err
 	}
 
-	if err = serializer.Json.Unmarshal(replyBuf, reply); err != nil {
+	if err = r.serializer.Unmarshal(replyBuf, reply); err != nil {
+		r.Log().Error("rpc call  err", zap.Error(err))
 		return err
 	}
 	return nil
@@ -92,45 +99,74 @@ func (r *Rpc) Call(from, to *api.Pid, methodName string, timeout time.Duration, 
 
 func (r *Rpc) process(data []byte, respond api.RpcRespondHandler) error {
 	msg := new(Message)
-	if err := serializer.Json.Unmarshal(data, msg); err != nil {
+	if err := r.serializer.Unmarshal(data, msg); err != nil {
+		r.Log().Error("rpc process  err", zap.Error(err))
 		return err
 	}
 
 	process := r.Node().ActorSystem().Find(msg.To)
 	if process == nil || process.Context() == nil {
+		r.Log().Error("rpc process  err", zap.Error(api.ErrPidIsNil))
 		return api.ErrPidIsNil
 	}
 	router := process.Context().Router()
 	if router == nil {
+		r.Log().Error("rpc process  err", zap.Error(api.ErrActorRouterIsNil))
 		return api.ErrActorRouterIsNil
 	}
 	request, reply, err := router.NewArgs(msg.MethodName)
 	if err != nil {
+		r.Log().Error("rpc process  err",
+			zap.String("methodName", msg.MethodName), zap.Error(err))
 		return err
 	}
-	if err = serializer.Json.Unmarshal(msg.Data, request); err != nil {
+	if err = r.serializer.Unmarshal(msg.Data, request); err != nil {
+		r.Log().Error("rpc process  err",
+			zap.String("methodName", msg.MethodName), zap.Error(err))
 		return err
 	}
 	if reply == nil {
-		if err := r.Node().ActorSystem().Send(msg.From, msg.To, msg.MethodName, request); err != nil {
+		if err = process.Send(msg.From, msg.MethodName, request); err != nil {
+			r.Log().Error("rpc process  err",
+				zap.String("methodName", msg.MethodName), zap.Error(err))
 			return err
 		}
 		return nil
 	} else {
-		if err = r.Node().ActorSystem().Call(msg.From, msg.To, msg.MethodName, msg.Timeout, request, reply); err != nil {
+		wait, callErr := process.Call(msg.From, msg.MethodName, msg.Timeout, request, reply)
+		if callErr != nil {
+			r.Log().Error("rpc process  err",
+				zap.String("methodName", msg.MethodName), zap.Error(err))
 			return err
 		}
-		return r.respond(respond, reply)
+		r.Node().Workers().Submit(func() {
+			if waitErr := wait.Wait(); waitErr != nil {
+				r.Log().Error("rpc process  err",
+					zap.String("methodName", msg.MethodName), zap.Error(waitErr))
+				return
+			}
+			if err = r.respond(respond, reply); err != nil {
+				r.Log().Error("rpc process  err",
+					zap.String("methodName", msg.MethodName), zap.Error(err))
+				return
+			}
+		}, nil)
 	}
+	return nil
 }
 
 func (r *Rpc) respond(respond api.RpcRespondHandler, reply interface{}) error {
-	buf, err := serializer.Json.Marshal(reply)
+	data, err := r.serializer.Marshal(reply)
 	if err != nil {
+		r.Log().Error("rpc respond  err", zap.Error(err))
 		return err
 	}
-	respond(buf)
+	respond(data)
 	return nil
+}
+
+func (r *Rpc) SetSerializer(serializer api.ISerializer) {
+	r.serializer = serializer
 }
 
 func (r *Rpc) Stop() error {

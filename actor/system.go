@@ -136,7 +136,7 @@ func (s *System) Call(from, to *api.Pid, funcName string, timeout time.Duration,
 	if process == nil {
 		return api.ErrProcessNotExist
 	}
-	return process.Call(from, funcName, timeout, request, reply)
+	return process.CallAndWait(from, funcName, timeout, request, reply)
 }
 
 func (s *System) isLocalPid(pid *api.Pid) bool {

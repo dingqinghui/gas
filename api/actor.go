@@ -61,7 +61,8 @@ type (
 		Pid() *Pid
 		Context() IActorContext
 		Send(from *Pid, funcName string, request interface{}) error
-		Call(from *Pid, funcName string, timeout time.Duration, request, reply interface{}) error
+		CallAndWait(from *Pid, funcName string, timeout time.Duration, request, reply interface{}) error
+		Call(from *Pid, methodName string, timeout time.Duration, request, reply any) (IActorWaiter, error)
 		AsyncStop() error
 	}
 
