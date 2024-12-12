@@ -12,18 +12,45 @@ import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/serializer"
 	"github.com/panjf2000/gnet/v2"
+	"time"
 )
 
 type Option func(*Options)
-type HandshakeAuthFunc func(ctx api.IActorContext, data []byte) ([]byte, error)
+type HandshakeAuthFunc func(session api.ISession, data []byte) ([]byte, error)
+
+func loadOptions(options ...Option) *Options {
+	opts := defaultOptions()
+	for _, option := range options {
+		option(opts)
+	}
+	return opts
+}
+
+func defaultOptions() *Options {
+	opts := &Options{
+		AgentProducer: func() api.IActor {
+			return new(AgentActor)
+		},
+		HandshakeAuth: func(session api.ISession, data []byte) ([]byte, error) {
+			return nil, nil
+		},
+		HandshakeBody:    nil,
+		GNetOpts:         nil,
+		Router:           new(Router),
+		Serializer:       serializer.Json,
+		HeartBeatTimeout: time.Second * 5,
+	}
+	return opts
+}
 
 type Options struct {
-	AgentProducer api.ActorProducer
-	HandshakeAuth HandshakeAuthFunc
-	HandshakeBody []byte
-	GNetOpts      []gnet.Option
-	Router        api.INetRouter
-	Serializer    api.ISerializer
+	AgentProducer    api.ActorProducer
+	HandshakeAuth    HandshakeAuthFunc
+	HandshakeBody    []byte
+	GNetOpts         []gnet.Option
+	Router           api.INetRouter
+	Serializer       api.ISerializer
+	HeartBeatTimeout time.Duration
 }
 
 func WithAgentProducer(producer api.ActorProducer) Option {
@@ -55,28 +82,8 @@ func WithSerializer(serializer api.ISerializer) Option {
 		op.Serializer = serializer
 	}
 }
-
-func loadOptions(options ...Option) *Options {
-	opts := new(Options)
-	for _, option := range options {
-		option(opts)
+func WithHeartBeatTimeout(hearTimeout time.Duration) Option {
+	return func(op *Options) {
+		op.HeartBeatTimeout = hearTimeout
 	}
-	if opts.AgentProducer == nil {
-		opts.AgentProducer = func() api.IActor {
-			return new(AgentActor)
-		}
-	}
-	if opts.HandshakeAuth == nil {
-		opts.HandshakeAuth = func(ctx api.IActorContext, data []byte) ([]byte, error) {
-			return nil, nil
-		}
-	}
-	if opts.Router == nil {
-		opts.Router = new(Router)
-	}
-
-	if opts.Serializer == nil {
-		opts.Serializer = serializer.Json
-	}
-	return opts
 }

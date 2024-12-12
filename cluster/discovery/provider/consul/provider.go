@@ -12,6 +12,7 @@ import (
 	api2 "github.com/dingqinghui/gas/api"
 	"github.com/hashicorp/consul/api"
 	"go.uber.org/zap"
+	"time"
 )
 
 type consulProvider struct {
@@ -136,6 +137,7 @@ func (c *consulProvider) healthCheckActor() {
 				zap.String("status", c.status), zap.Error(err))
 			return
 		}
+		time.Sleep(c.cfg.healthTtl / 2)
 	}
 	c.Log().Info("consul health check end")
 }

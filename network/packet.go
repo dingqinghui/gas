@@ -10,7 +10,6 @@ package network
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/dingqinghui/gas/api"
 	"github.com/panjf2000/gnet/v2"
 )
@@ -25,43 +24,24 @@ const (
 )
 
 var (
-	KickPacket         = NewPacket(PacketTypeKick, nil)
 	HandshakeAckPacket = NewPacket(PacketTypeHandshakeAck, nil)
 )
 
-func NewHandshakePacket(buf []byte) *BuiltinNetworkPacket {
+func NewHandshakePacket(buf []byte) *api.BuiltinNetworkPacket {
 	return NewPacket(PacketTypeHandshake, buf)
 }
 
-func NewDataPacket(data []byte) *BuiltinNetworkPacket {
-	return &BuiltinNetworkPacket{Type: PacketTypeData, Data: data}
+func NewDataPacket(data []byte) *api.BuiltinNetworkPacket {
+	return &api.BuiltinNetworkPacket{Type: PacketTypeData, Data: data}
 }
 
-func NewPacket(tye api.NetPacketType, data []byte) *BuiltinNetworkPacket {
-	return &BuiltinNetworkPacket{Type: tye, Data: data}
-}
-
-type BuiltinNetworkPacket struct {
-	Type api.NetPacketType
-	Data []byte
-}
-
-func (p *BuiltinNetworkPacket) GetTyp() api.NetPacketType {
-	return p.Type
-}
-
-func (p *BuiltinNetworkPacket) GetData() []byte {
-	return p.Data
-}
-
-func (p *BuiltinNetworkPacket) String() string {
-	return fmt.Sprintf("NetPacketType: %d,  Data: %s", p.Type, string(p.Data))
+func NewPacket(tye api.NetPacketType, data []byte) *api.BuiltinNetworkPacket {
+	return &api.BuiltinNetworkPacket{Type: tye, Data: data}
 }
 
 const (
 	HeadLength    = 2 + 4
 	MaxPacketSize = 64 * 1024
-	msgDataOffset = 4
 )
 
 var packCodec = &BuiltinPacketCodec{}
@@ -77,11 +57,11 @@ func (codec *BuiltinPacketCodec) Encode(packet api.INetPacket) []byte {
 	return buf
 }
 
-func (codec *BuiltinPacketCodec) Decode(reader gnet.Reader) []*BuiltinNetworkPacket {
+func (codec *BuiltinPacketCodec) Decode(reader gnet.Reader) []*api.BuiltinNetworkPacket {
 	if reader == nil {
 		return nil
 	}
-	var packets []*BuiltinNetworkPacket
+	var packets []*api.BuiltinNetworkPacket
 	for {
 		buf, _ := reader.Peek(HeadLength)
 		if len(buf) < HeadLength {
@@ -101,7 +81,7 @@ func (codec *BuiltinPacketCodec) Decode(reader gnet.Reader) []*BuiltinNetworkPac
 			return nil
 		}
 		_, _ = reader.Discard(msgLen)
-		p := new(BuiltinNetworkPacket)
+		p := new(api.BuiltinNetworkPacket)
 		p.Type = api.NetPacketType(typ)
 		p.Data = buf[HeadLength:msgLen]
 		packets = append(packets, p)

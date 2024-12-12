@@ -21,7 +21,7 @@ type IFsmState interface {
 }
 
 type baseState struct {
-	*SessionActor
+	*Session
 }
 
 // closedState
@@ -31,8 +31,7 @@ type closedState struct {
 }
 
 func (s *closedState) Exec(packet api.INetPacket) error {
-
-	if s.service.Type() == api.NetServiceListener && packet != nil {
+	if s.Type() == api.NetListener && packet != nil {
 		if packet.GetTyp() != PacketTypeHandshake {
 			return xerror.New("not handshake packet %v", packet.GetTyp())
 		}
@@ -48,7 +47,7 @@ func (s *closedState) Exec(packet api.INetPacket) error {
 
 func (s *closedState) serverHandshake(packet api.INetPacket) error {
 	// handshake auth
-	buf, err := s.opts.HandshakeAuth(s.Ctx, packet.GetData())
+	buf, err := s.opts.HandshakeAuth(s, packet.GetData())
 	if err != nil {
 		return err
 	}
@@ -57,7 +56,7 @@ func (s *closedState) serverHandshake(packet api.INetPacket) error {
 }
 
 func (s *closedState) Next() IFsmState {
-	if s.service.Type() == api.NetServiceListener {
+	if s.Type() == api.NetListener {
 		return &waitHandshakeAckState{baseState: s.baseState}
 	} else {
 		return &waitHandshakeState{baseState: s.baseState}
@@ -105,6 +104,8 @@ func (w *waitHandshakeAckState) Exec(packet api.INetPacket) error {
 }
 
 func (w *waitHandshakeAckState) Next() IFsmState {
+	//w.heartBeat()
+	//w.addHeartBeatTimer()
 	return &workingState{baseState: w.baseState}
 }
 
@@ -121,10 +122,18 @@ func (s *workingState) Exec(packet api.INetPacket) error {
 	if packet.GetTyp() != PacketTypeData && packet.GetTyp() != PacketTypeHeartbeat {
 		return xerror.New("not data or heartbeat packet %v", packet.GetTyp())
 	}
+	if packet.GetTyp() == PacketTypeHeartbeat {
+		//s.heartBeat()
+	}
+	return s.processDataPack(packet)
+}
+
+func (s *workingState) processDataPack(packet api.INetPacket) error {
 	pid := s.agentPid
 	msg := msgCodec.Decode(packet.GetData())
 	methodName := s.opts.Router.Get(msg.GetID())
-	process := s.Ctx.System().Find(pid)
+	system := s.node.ActorSystem()
+	process := s.node.ActorSystem().Find(pid)
 	if process == nil || process.Context() == nil {
 		return errors.New("not agent pid")
 	}
@@ -141,14 +150,14 @@ func (s *workingState) Exec(packet api.INetPacket) error {
 		return err
 	}
 	if s2c == nil {
-		if err = s.Ctx.System().Send(nil, pid, methodName, c2s); err != nil {
+		if err = system.Send(nil, pid, methodName, c2s); err != nil {
 			return err
 		}
 	} else {
-		if err = s.Ctx.System().Call(nil, pid, methodName, time.Second*1, c2s, s2c); err != nil {
+		if err = system.Call(nil, pid, methodName, time.Second*1, c2s, s2c); err != nil {
 			return err
 		}
-		return s.push(msg.GetID(), s2c)
+		return s.SendMessage(msg.GetID(), s2c)
 	}
 	return nil
 }

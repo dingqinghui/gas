@@ -25,6 +25,7 @@ type (
 		IActorSender
 		Init()
 		Run()
+		Wait()
 		GetViper() *viper.Viper
 		ActorSystem() IActorSystem
 		Log() IZLogger

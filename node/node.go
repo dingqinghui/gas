@@ -103,7 +103,6 @@ func (a *Node) Run() {
 		module.Run()
 	}
 	a.Log().Info("node running............")
-	a.wait()
 }
 
 func (a *Node) Base() api.INodeBase {
@@ -159,7 +158,7 @@ func (a *Node) Call(from, pid *api.Pid, funcName string, timeout time.Duration, 
 	}
 }
 
-func (a *Node) wait() {
+func (a *Node) Wait() {
 	stopChanForSys := make(chan os.Signal, 1)
 	signal.Notify(stopChanForSys, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
 	select {

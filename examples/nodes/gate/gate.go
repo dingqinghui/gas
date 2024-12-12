@@ -20,7 +20,7 @@ import (
 )
 
 type ServerAgent struct {
-	api.BuiltinActor
+	network.AgentActor
 }
 
 func (a *ServerAgent) Data(message *common.ClientMessage, respond *common.ClientMessage) error {
@@ -53,13 +53,13 @@ func (a *ServerAgent) JoinSuccess(message *common.ClientMessage) error {
 	return nil
 }
 
-func HandshakeAuthFunc(ctx api.IActorContext, data []byte) ([]byte, error) {
+func HandshakeAuthFunc(session api.ISession, data []byte) ([]byte, error) {
 	m := common.UnmarshalHandshakeMessage(data)
-	ctx.Info("HandshakeFuncAuth", zap.String("version", m.Version))
+	session.Node().Log().Info("HandshakeFuncAuth", zap.String("version", m.Version))
 	// 验证客户端信息
 	if m.Version == "" {
-		if err := ctx.Process().AsyncStop(); err != nil {
-			ctx.Info("HandshakeFuncAuth", zap.Error(err))
+		if err := session.Close(errors.New("handshake auth fail")); err != nil {
+			session.Node().Log().Info("HandshakeFuncAuth", zap.Error(err))
 			return nil, err
 		}
 		return nil, errors.New("handshake auth fail")
@@ -88,4 +88,6 @@ func RunGateNode(path string) {
 	}
 
 	gateNode.Run()
+
+	gateNode.Wait()
 }

@@ -17,7 +17,7 @@
     "printConsole": true
   },
   "network": [
-    "tcp://127.0.0.1:8454"
+    "udp://127.0.0.1:8454"
   ],
   "node": {
     "id": "gate_1",

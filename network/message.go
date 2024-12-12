@@ -12,25 +12,7 @@ import (
 	"encoding/binary"
 )
 
-type GNetTrafficMessage struct {
-	Packets []*BuiltinNetworkPacket
-}
-
-type AgentPushMessage struct {
-	MsgId uint16
-	S2c   interface{}
-}
-
-const MsgIdOffset = 2
-
 var msgCodec = new(BuiltinMsgCodec)
-
-func NewMessage(id uint16, data []byte) *BuiltinMessage {
-	return &BuiltinMessage{
-		id:   id,
-		data: data,
-	}
-}
 
 type BuiltinMessage struct {
 	id   uint16
@@ -39,6 +21,8 @@ type BuiltinMessage struct {
 
 func (m *BuiltinMessage) GetID() uint16   { return m.id }
 func (m *BuiltinMessage) GetData() []byte { return m.data }
+
+const MsgIdOffset = 2
 
 type BuiltinMsgCodec struct{}
 
