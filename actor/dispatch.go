@@ -13,7 +13,7 @@ type goroutineDispatcher int
 func NewDefaultDispatcher(throughput int) api.IActorDispatcher {
 	return goroutineDispatcher(throughput)
 }
-func (goroutineDispatcher) Schedule(node api.INode, fn func(), recoverFun func(err interface{})) error {
+func (goroutineDispatcher) Schedule(node api.INode, fn func(), recoverFun func(err interface{})) *api.Error {
 	node.Workers().Submit(fn, recoverFun)
 	return nil
 }
@@ -25,7 +25,7 @@ func (d goroutineDispatcher) Throughput() int {
 // 同步调度器
 type synchronizedDispatcher int
 
-func (synchronizedDispatcher) Schedule(node api.INode, fn func(), recoverFun func(err interface{})) error {
+func (synchronizedDispatcher) Schedule(node api.INode, fn func(), recoverFun func(err interface{})) *api.Error {
 	node.Workers().Try(fn, recoverFun)
 	return nil
 }

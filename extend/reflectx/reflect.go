@@ -14,6 +14,14 @@ import (
 	"unicode/utf8"
 )
 
+type Method struct {
+	Name     string
+	Fun      reflect.Value
+	Typ      reflect.Type
+	ArgTypes []reflect.Type
+	ArgNum   int
+}
+
 func TypeFullName(v interface{}) string {
 	t := reflect.TypeOf(v)
 	for t.Kind() == reflect.Ptr {
@@ -42,21 +50,8 @@ func NewByType(t reflect.Type) interface{} {
 	}
 }
 
-type Method struct {
-	Name     string
-	Fun      reflect.Value
-	Typ      reflect.Type
-	ArgTypes []reflect.Type
-	ArgNum   int
-}
-
-func SuitableMethods(rec interface{}, defaultFun interface{}) map[string]*Method {
-	var defaultParamType []reflect.Type
-	dt := reflect.TypeOf(defaultFun)
+func SuitableMethods(rec interface{}) map[string]*Method {
 	typ := reflect.TypeOf(rec)
-	for i := 0; i < dt.NumIn(); i++ {
-		defaultParamType = append(defaultParamType, dt.In(i))
-	}
 	methods := make(map[string]*Method)
 	for index := 0; index < typ.NumMethod(); index++ {
 		fun := typ.Method(index)
@@ -65,14 +60,14 @@ func SuitableMethods(rec interface{}, defaultFun interface{}) map[string]*Method
 		if fun.PkgPath != "" {
 			continue
 		}
-		// check return num
-		if funType.NumOut() != dt.NumOut() {
-			continue
-		}
-		// check args num
-		if funType.NumIn() < dt.NumIn() {
-			continue
-		}
+		//// check return num
+		//if funType.NumOut() != dt.NumOut() {
+		//	continue
+		//}
+		//// check args num
+		//if funType.NumIn() < dt.NumIn() {
+		//	continue
+		//}
 
 		// check extra arg
 		isExtraExported := true

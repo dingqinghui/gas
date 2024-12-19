@@ -11,7 +11,9 @@ package actor
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/asynctime"
+	"github.com/dingqinghui/gas/extend/serializer"
 	"github.com/duke-git/lancet/v2/maputil"
+	"go.uber.org/zap"
 	"sync/atomic"
 	"time"
 )
@@ -22,10 +24,14 @@ type System struct {
 	nameDict    *maputil.ConcurrentMap[string, *api.Pid]
 	processDict *maputil.ConcurrentMap[uint64, api.IProcess]
 	routerHub   api.IActorRouterHub
+	timeout     time.Duration
+	serializer  api.ISerializer
 }
 
 func NewSystem(node api.INode) api.IActorSystem {
 	s := new(System)
+	s.timeout = time.Second * 1
+	s.serializer = serializer.Json
 	s.SetNode(node)
 	s.Init()
 	return s
@@ -39,6 +45,19 @@ func (s *System) Init() {
 
 func (s *System) Name() string {
 	return "actorSystem"
+}
+
+func (s *System) Timeout() time.Duration {
+	return s.timeout
+}
+func (s *System) SetTimeout(timeout time.Duration) {
+	s.timeout = timeout
+}
+func (s *System) SetSerializer(serializer api.ISerializer) {
+	s.serializer = serializer
+}
+func (s *System) Serializer() api.ISerializer {
+	return s.serializer
 }
 
 func (s *System) Find(pid *api.Pid) api.IProcess {
@@ -70,7 +89,7 @@ func (s *System) FindByName(name string) api.IProcess {
 	return s.FindById(pid.GetUniqId())
 }
 
-func (s *System) RegisterName(name string, pid *api.Pid) error {
+func (s *System) RegisterName(name string, pid *api.Pid) *api.Error {
 	if pid == nil {
 		return api.ErrPidIsNil
 	}
@@ -82,7 +101,7 @@ func (s *System) RegisterName(name string, pid *api.Pid) error {
 	return nil
 }
 
-func (s *System) UnregisterName(name string) (*api.Pid, error) {
+func (s *System) UnregisterName(name string) (*api.Pid, *api.Error) {
 	v, ok := s.nameDict.GetAndDelete(name)
 	if !ok {
 		return nil, api.ErrActorNameNotExist
@@ -90,7 +109,7 @@ func (s *System) UnregisterName(name string) (*api.Pid, error) {
 	return v, nil
 }
 
-func (s *System) Spawn(producer api.ActorProducer, params interface{}, opts ...api.ProcessOption) (*api.Pid, error) {
+func (s *System) Spawn(producer api.ActorProducer, params interface{}, opts ...api.ProcessOption) (*api.Pid, *api.Error) {
 	process, err := s.spawn(producer, params, opts...)
 	if err != nil || process == nil {
 		return nil, err
@@ -103,7 +122,7 @@ func (s *System) Spawn(producer api.ActorProducer, params interface{}, opts ...a
 	return pid, nil
 }
 
-func (s *System) SpawnWithName(name string, producer api.ActorProducer, params interface{}, opts ...api.ProcessOption) (*api.Pid, error) {
+func (s *System) SpawnWithName(name string, producer api.ActorProducer, params interface{}, opts ...api.ProcessOption) (*api.Pid, *api.Error) {
 	pid, err := s.Spawn(producer, params, opts...)
 	if err != nil || pid == nil {
 		return nil, err
@@ -111,35 +130,75 @@ func (s *System) SpawnWithName(name string, producer api.ActorProducer, params i
 	return pid, s.RegisterName(name, pid)
 }
 
-func (s *System) Send(from, to *api.Pid, funcName string, request interface{}) error {
+func (s *System) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
 	if !api.ValidPid(to) {
 		return api.ErrInvalidPid
 	}
-	if !s.isLocalPid(to) {
-		return api.ErrNotLocalPid
+	if s.IsLocalPid(to) {
+		process := s.Find(to)
+		if process == nil {
+			return api.ErrProcessNotExist
+		}
+		return process.PostMessage(message)
+	} else {
+		return s.Node().Cluster().Rpc().PostMessage(to, message)
 	}
-	process := s.Find(to)
-	if process == nil {
-		return api.ErrProcessNotExist
-	}
-	return process.Send(from, funcName, request)
 }
 
-func (s *System) Call(from, to *api.Pid, funcName string, timeout time.Duration, request, reply interface{}) error {
+func (s *System) Send(from, to *api.Pid, funcName string, request interface{}) *api.Error {
+	data, err := s.Serializer().Marshal(request)
+	if err != nil {
+		return api.ErrJsonPack
+	}
+	message := api.BuildInnerMessage(from, to, funcName, data)
+	return s.PostMessage(to, message)
+}
+
+func (s *System) Call(from, to *api.Pid, funcName string, request, reply interface{}) *api.Error {
 	if !api.ValidPid(to) {
 		return api.ErrInvalidPid
 	}
-	if !s.isLocalPid(to) {
-		return api.ErrNotLocalPid
+	requestData, e := s.Serializer().Marshal(request)
+	if e != nil {
+		s.Log().Error("system call", zap.Error(api.ErrJsonPack))
+		return api.ErrJsonPack
 	}
-	process := s.Find(to)
-	if process == nil {
-		return api.ErrProcessNotExist
+	message := api.BuildInnerMessage(from, to, funcName, requestData)
+
+	var rsp *api.RespondMessage
+	if s.IsLocalPid(to) {
+		process := s.Find(to)
+		if process == nil {
+			return api.ErrProcessNotExist
+		}
+		rsp = process.PostMessageAndWait(message)
+	} else {
+		rsp = s.Node().Cluster().Rpc().Call(to, s.timeout, message)
 	}
-	return process.CallAndWait(from, funcName, timeout, request, reply)
+	if rsp == nil {
+		return nil
+	}
+	if !api.IsOk(rsp.Err) {
+		return rsp.Err
+	}
+	if err := s.unmarshalRsp(rsp, reply); err != nil {
+		s.Log().Error("system call", zap.Error(err))
+		return err
+	}
+	return nil
 }
 
-func (s *System) isLocalPid(pid *api.Pid) bool {
+func (s *System) unmarshalRsp(rsp *api.RespondMessage, reply interface{}) *api.Error {
+	if rsp.Data == nil {
+		return nil
+	}
+	if err := s.Serializer().Unmarshal(rsp.Data, reply); err != nil {
+		return api.ErrJsonUnPack
+	}
+	return nil
+}
+
+func (s *System) IsLocalPid(pid *api.Pid) bool {
 	return pid.GetNodeId() == s.Node().GetID()
 }
 
@@ -150,7 +209,7 @@ func (s *System) NextPid() *api.Pid {
 	}
 }
 
-func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...api.ProcessOption) (api.IProcess, error) {
+func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...api.ProcessOption) (api.IProcess, *api.Error) {
 	opt := loadOptions(opts...)
 	mb := getMailBox(s.Node(), opt)
 
@@ -170,7 +229,8 @@ func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...a
 
 	mb.RegisterHandlers(context, getDispatcher(opt))
 	// notify actor start
-	if err := process.Send(process.Pid(), InitFuncName, context); err != nil {
+	message := buildInitMessage()
+	if err := process.PostMessage(message); err != nil {
 		return nil, err
 	}
 	return process, nil
@@ -180,7 +240,7 @@ func (s *System) RouterHub() api.IActorRouterHub {
 	return s.routerHub
 }
 
-func (s *System) AddTimer(pid *api.Pid, d time.Duration, funcName string) error {
+func (s *System) AddTimer(pid *api.Pid, d time.Duration, funcName string) *api.Error {
 	if pid == nil {
 		return api.ErrPidIsNil
 	}
@@ -190,11 +250,11 @@ func (s *System) AddTimer(pid *api.Pid, d time.Duration, funcName string) error 
 	return nil
 }
 
-func (s *System) Kill(pid *api.Pid) error {
+func (s *System) Kill(pid *api.Pid) *api.Error {
 	if !api.ValidPid(pid) {
 		return api.ErrInvalidPid
 	}
-	if !s.isLocalPid(pid) {
+	if !s.IsLocalPid(pid) {
 		return api.ErrNotLocalPid
 	}
 	process := s.Find(pid)
@@ -209,7 +269,7 @@ func (s *System) Kill(pid *api.Pid) error {
 	return nil
 }
 
-func (s *System) Stop() error {
+func (s *System) Stop() *api.Error {
 	if err := s.BuiltinStopper.Stop(); err != nil {
 		return err
 	}

@@ -13,15 +13,32 @@ import (
 )
 
 type AgentActor struct {
-	session api.ISession
 	api.BuiltinActor
+	Session *api.Session
 }
 
-func (t *AgentActor) OnInit(ctx api.IActorContext) error {
+func (t *AgentActor) OnInit(ctx api.IActorContext) *api.Error {
 	_ = t.BuiltinActor.OnInit(ctx)
-	t.session = t.Ctx.InitParams().(api.ISession)
+	t.Session = ctx.InitParams().(*api.Session)
 	return nil
 }
-func (t *AgentActor) Session() api.ISession {
-	return t.session
+
+// Push
+// @Description: 外部发送调用
+// @receiver t
+// @param session
+// @param data
+// @return *api.Error
+func (t *AgentActor) Push(session *api.Session, data []byte) *api.Error {
+	if session.GetEntity() == nil {
+		session, _ = SessionHub.Get(session.GetSid())
+	}
+	if session == nil {
+		return api.ErrNetworkRespond
+	}
+	entity := session.GetEntity()
+	if entity == nil {
+		return api.ErrNetworkRespond
+	}
+	return entity.SendRawMessage(session.Mid, data)
 }

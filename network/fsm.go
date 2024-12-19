@@ -10,19 +10,24 @@ package network
 
 import (
 	"github.com/dingqinghui/gas/api"
-	"github.com/duke-git/lancet/v2/xerror"
 	"go.uber.org/zap"
-	"time"
+	"golang.org/x/exp/slices"
 )
 
 type IFsmState interface {
-	Exec(packet api.INetPacket) error
+	Exec(packet api.INetPacket) *api.Error
 	Next() IFsmState
 	Name() string
 }
 
+func newClosedState(entity *Entity) *closedState {
+	return &closedState{&baseState{
+		Entity: entity,
+	}}
+}
+
 type baseState struct {
-	*Session
+	*Entity
 }
 
 // closedState
@@ -31,10 +36,12 @@ type closedState struct {
 	*baseState
 }
 
-func (s *closedState) Exec(packet api.INetPacket) error {
+func (s *closedState) Exec(packet api.INetPacket) *api.Error {
 	if s.Type() == api.NetListener && packet != nil {
 		if packet.GetTyp() != PacketTypeHandshake {
-			return xerror.New("wrong package type:%v ", packet.GetTyp())
+			s.Log().Error("net entity fsm exec", zap.Uint64("id", s.ID()),
+				zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
+			return api.ErrPacketType
 		}
 		return s.serverHandshake(packet)
 	} else {
@@ -46,10 +53,10 @@ func (s *closedState) Exec(packet api.INetPacket) error {
 	return nil
 }
 
-func (s *closedState) serverHandshake(packet api.INetPacket) error {
+func (s *closedState) serverHandshake(packet api.INetPacket) *api.Error {
 	// handshake auth
 	buf, err := s.opts.HandshakeAuth(s, packet.GetData())
-	if err != nil {
+	if !api.IsOk(err) {
 		s.Log().Error("server handshake auth err",
 			zap.Uint64("sessionId", s.ID()), zap.Error(err))
 		return err
@@ -76,12 +83,14 @@ type waitHandshakeState struct {
 	*baseState
 }
 
-func (w *waitHandshakeState) Exec(packet api.INetPacket) error {
+func (w *waitHandshakeState) Exec(packet api.INetPacket) *api.Error {
 	if packet == nil {
 		return nil
 	}
 	if packet.GetTyp() != PacketTypeHandshake {
-		return xerror.New("wrong package type:%v ", packet.GetTyp())
+		w.Log().Error("net entity fsm exec", zap.Uint64("id", w.ID()),
+			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
+		return api.ErrPacketType
 	}
 	// send handshake ack
 	if err := w.SendPacket(HandshakeAckPacket); err != nil {
@@ -104,12 +113,14 @@ type waitHandshakeAckState struct {
 	*baseState
 }
 
-func (w *waitHandshakeAckState) Exec(packet api.INetPacket) error {
+func (w *waitHandshakeAckState) Exec(packet api.INetPacket) *api.Error {
 	if packet == nil {
 		return nil
 	}
 	if packet.GetTyp() != PacketTypeHandshakeAck {
-		return xerror.New("wrong package type:%v ", packet.GetTyp())
+		w.Log().Error("net entity fsm exec", zap.Uint64("id", w.ID()),
+			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
+		return api.ErrPacketType
 	}
 	return w.spawnAgent()
 }
@@ -130,95 +141,37 @@ type workingState struct {
 	*baseState
 }
 
-func (s *workingState) Exec(packet api.INetPacket) error {
+func (s *workingState) Exec(packet api.INetPacket) *api.Error {
 	if packet == nil {
 		return nil
 	}
 	if packet.GetTyp() != PacketTypeData && packet.GetTyp() != PacketTypeHeartbeat {
-		return xerror.New("wrong package type:%v ", packet.GetTyp())
+		s.Log().Error("net entity fsm exec", zap.Uint64("id", s.ID()),
+			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
+		return api.ErrPacketType
 	}
 	if packet.GetTyp() == PacketTypeHeartbeat {
 		//s.heartBeat()
 	}
 	return s.processDataPack(packet)
 }
-
-func (s *workingState) processDataPack(packet api.INetPacket) error {
-	pid := s.agentPid
+func (s *workingState) processDataPack(packet api.INetPacket) *api.Error {
 	msg := msgCodec.Decode(packet.GetData())
-	methodName := s.opts.Router.Get(msg.GetID())
-	system := s.node.ActorSystem()
-	process := system.Find(pid)
-	if process == nil || process.Context() == nil {
-		s.Log().Error("processDataPack err",
-			zap.Uint64("sessionId", s.ID()),
-			zap.String("pid", pid.String()),
-			zap.Error(api.ErrNotLocalPid))
-		return api.ErrNotLocalPid
-	}
-
-	router := process.Context().Router()
+	router := s.opts.Router.Get(msg.GetID())
 	if router == nil {
-		s.Log().Error("processDataPack err",
-			zap.Uint64("sessionId", s.ID()),
-			zap.String("pid", pid.String()),
-			zap.Error(api.ErrActorRouterIsNil))
-		return api.ErrActorRouterIsNil
+		s.Log().Error("net entity fsm exec", zap.Uint64("id", s.ID()),
+			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrNetworkRoute))
+		return api.ErrNetworkRoute
 	}
-	c2s, s2c, err := router.NewArgs(methodName)
-	if err != nil {
-		s.Log().Error("processDataPack err",
-			zap.Uint64("sessionId", s.ID()),
-			zap.String("pid", pid.String()),
-			zap.String("methodName", methodName),
-			zap.Error(err))
+	to := s.agentPid
+	if !slices.Contains(s.node.GetTags(), router.GetNodeType()) {
+		to = api.NewPidWithName(router.GetNodeType())
+	}
+	message := api.BuildNetMessage(s.session, router.GetMethod(), msg.GetID(), msg.GetData())
+	if err := s.node.System().PostMessage(to, message); err != nil {
+		s.Log().Error("net entity fsm exec", zap.Uint64("id", s.ID()),
+			zap.Int("typ", int(packet.GetTyp())), zap.Error(err))
 		return err
-	}
-	if err = s.opts.Serializer.Unmarshal(msg.GetData(), c2s); err != nil {
-		s.Log().Error("processDataPack err",
-			zap.Uint64("sessionId", s.ID()),
-			zap.String("pid", pid.String()),
-			zap.String("methodName", methodName),
-			zap.Error(err))
-		return err
-	}
-	if s2c == nil {
-		if err = process.Send(nil, methodName, c2s); err != nil {
-			s.Log().Error("processDataPack err",
-				zap.Uint64("sessionId", s.ID()),
-				zap.String("pid", pid.String()),
-				zap.String("methodName", methodName),
-				zap.Error(err))
-			return err
-		}
-	} else {
-		wait, callErr := process.Call(nil, methodName, time.Second*3, c2s, s2c)
-		if callErr != nil {
-			s.Log().Error("processDataPack err",
-				zap.Uint64("sessionId", s.ID()),
-				zap.String("pid", pid.String()),
-				zap.String("methodName", methodName),
-				zap.Error(callErr))
-			return callErr
-		}
-		s.node.Workers().Submit(func() {
-			if waitErr := wait.Wait(); waitErr != nil {
-				s.Log().Error("processDataPack err",
-					zap.Uint64("sessionId", s.ID()),
-					zap.String("pid", pid.String()),
-					zap.String("methodName", methodName),
-					zap.Error(waitErr))
-				return
-			}
-			if err = s.SendMessage(msg.GetID(), s2c); err != nil {
-				s.Log().Error("processDataPack err",
-					zap.Uint64("sessionId", s.ID()),
-					zap.String("pid", pid.String()),
-					zap.String("methodName", methodName),
-					zap.Error(err))
-				return
-			}
-		}, nil)
 	}
 	return nil
 }

@@ -11,6 +11,7 @@ package rpc
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/serializer"
+	"github.com/duke-git/lancet/v2/convertor"
 	"go.uber.org/zap"
 	"time"
 )
@@ -47,129 +48,61 @@ func (r *Rpc) Run() {
 	r.Log().Info("rpc subscribe", zap.String("topic", topic))
 }
 
-func (r *Rpc) marshalMsgWithRequest(msg *Message, request interface{}) ([]byte, error) {
-	if request != nil {
-		data, err := r.serializer.Marshal(request)
-		if err != nil {
-			r.Log().Error("rpc marshal request err", zap.Error(err))
-			return nil, err
-		}
-		msg.Data = data
-	}
-
-	buf, err := r.serializer.Marshal(msg)
+func (r *Rpc) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
+	buf, err := r.serializer.Marshal(message)
 	if err != nil {
 		r.Log().Error("rpc marshal request err", zap.Error(err))
-		return nil, err
-	}
-	return buf, nil
-}
-
-func (r *Rpc) Send(from, to *api.Pid, methodName string, request interface{}) error {
-	msg := newMessage(from, to, methodName, false, 0)
-	buf, err := r.marshalMsgWithRequest(msg, request)
-	if err != nil {
-		r.Log().Error("rpc send  err", zap.Error(err))
-		return err
+		return api.ErrJsonPack
 	}
 	return r.msgque.Send(genTopic(to.GetNodeId()), buf)
 }
 
-func (r *Rpc) Call(from, to *api.Pid, methodName string, timeout time.Duration, request interface{}, reply interface{}) error {
-	msg := newMessage(from, to, methodName, true, timeout)
-
-	buf, err := r.marshalMsgWithRequest(msg, request)
+func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.ActorMessage) (rsp *api.RespondMessage) {
+	rsp = new(api.RespondMessage)
+	data, err := r.serializer.Marshal(message)
+	if err != nil {
+		r.Log().Error("rpc marshal request err", zap.Error(err))
+		rsp.Err = api.ErrJsonPack
+		return
+	}
+	rspData, err := r.msgque.Call(genTopic(to.GetNodeId()), data, timeout)
 	if err != nil {
 		r.Log().Error("rpc call  err", zap.Error(err))
-		return err
-	}
-
-	replyBuf, err := r.msgque.Call(genTopic(to.GetNodeId()), buf, timeout)
-	if err != nil {
-		r.Log().Error("rpc call  err", zap.Error(err))
-		return err
-	}
-
-	if err = r.serializer.Unmarshal(replyBuf, reply); err != nil {
-		r.Log().Error("rpc call  err", zap.Error(err))
-		return err
-	}
-	return nil
-}
-
-func (r *Rpc) process(data []byte, respond api.RpcRespondHandler) error {
-	msg := new(Message)
-	if err := r.serializer.Unmarshal(data, msg); err != nil {
-		r.Log().Error("rpc process  err", zap.Error(err))
-		return err
-	}
-
-	process := r.Node().ActorSystem().Find(msg.To)
-	if process == nil || process.Context() == nil {
-		r.Log().Error("rpc process  err", zap.Error(api.ErrPidIsNil))
-		return api.ErrPidIsNil
-	}
-	router := process.Context().Router()
-	if router == nil {
-		r.Log().Error("rpc process  err", zap.Error(api.ErrActorRouterIsNil))
-		return api.ErrActorRouterIsNil
-	}
-	request, reply, err := router.NewArgs(msg.MethodName)
-	if err != nil {
-		r.Log().Error("rpc process  err",
-			zap.String("methodName", msg.MethodName), zap.Error(err))
-		return err
-	}
-	if err = r.serializer.Unmarshal(msg.Data, request); err != nil {
-		r.Log().Error("rpc process  err",
-			zap.String("methodName", msg.MethodName), zap.Error(err))
-		return err
-	}
-	if reply == nil {
-		if err = process.Send(msg.From, msg.MethodName, request); err != nil {
-			r.Log().Error("rpc process  err",
-				zap.String("methodName", msg.MethodName), zap.Error(err))
-			return err
-		}
+		rsp.Err = api.ErrNatsSend
 		return nil
-	} else {
-		wait, callErr := process.Call(msg.From, msg.MethodName, msg.Timeout, request, reply)
-		if callErr != nil {
-			r.Log().Error("rpc process  err",
-				zap.String("methodName", msg.MethodName), zap.Error(err))
-			return err
-		}
-		r.Node().Workers().Submit(func() {
-			if waitErr := wait.Wait(); waitErr != nil {
-				r.Log().Error("rpc process  err",
-					zap.String("methodName", msg.MethodName), zap.Error(waitErr))
-				return
-			}
-			if err = r.respond(respond, reply); err != nil {
-				r.Log().Error("rpc process  err",
-					zap.String("methodName", msg.MethodName), zap.Error(err))
-				return
-			}
-		}, nil)
 	}
-	return nil
+
+	if err = serializer.Json.Unmarshal(rspData, rsp); err != nil {
+		r.Log().Error("system call", zap.Error(err))
+		rsp.Err = api.ErrJsonUnPack
+		return
+	}
+	return
 }
 
-func (r *Rpc) respond(respond api.RpcRespondHandler, reply interface{}) error {
-	data, err := r.serializer.Marshal(reply)
-	if err != nil {
-		r.Log().Error("rpc respond  err", zap.Error(err))
-		return err
+func (r *Rpc) process(data []byte, respond api.RpcRespondHandler) *api.Error {
+	message := new(api.ActorMessage)
+	if err := r.serializer.Unmarshal(data, message); err != nil {
+		r.Log().Error("rpc process  err", zap.Error(err))
+		return api.ErrJsonUnPack
 	}
-	respond(data)
-	return nil
+	if respond != nil {
+		message.SetRespond(func(rsp *api.RespondMessage) *api.Error {
+			rspData, err := serializer.Json.Marshal(rsp)
+			if err != nil {
+				return api.ErrJsonUnPack
+			}
+			return respond(rspData)
+		})
+	}
+	return r.Node().System().PostMessage(message.To, message)
 }
 
 func (r *Rpc) SetSerializer(serializer api.ISerializer) {
 	r.serializer = serializer
 }
 
-func (r *Rpc) Stop() error {
+func (r *Rpc) Stop() *api.Error {
 	if err := r.BuiltinStopper.Stop(); err != nil {
 		return err
 	}
@@ -180,6 +113,6 @@ func (r *Rpc) Stop() error {
 	return nil
 }
 
-func genTopic(nodeId string) string {
-	return "node." + nodeId
+func genTopic(nodeId uint64) string {
+	return "node." + convertor.ToString(nodeId)
 }

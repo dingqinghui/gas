@@ -8,10 +8,8 @@
 
 package serializer
 
-import "github.com/dingqinghui/gas/api"
-
 var (
-	Json    = api.ISerializer(new(jsonCodec))
-	MsgPack = api.ISerializer(new(msgPackCodec))
-	PB      = api.ISerializer(new(pbCodec))
+	Json    = new(jsonCodec)
+	MsgPack = new(msgPackCodec)
+	PB      = new(pbCodec)
 )

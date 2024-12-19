@@ -13,27 +13,27 @@ import (
 	"time"
 )
 
-func newWaiter(timeout time.Duration) api.IActorWaiter {
-	f := new(Waiter)
-	f.ch = make(chan struct{}, 1)
+func newChanWaiter(timeout time.Duration) *chanWaiter {
+	f := new(chanWaiter)
+	f.ch = make(chan *api.RespondMessage, 1)
 	f.after = time.After(timeout)
 	return f
 }
 
-type Waiter struct {
-	ch    chan struct{}
+type chanWaiter struct {
+	ch    chan *api.RespondMessage
 	after <-chan time.Time
 }
 
-func (f *Waiter) Wait() error {
+func (f *chanWaiter) Wait() (*api.RespondMessage, *api.Error) {
 	select {
-	case _ = <-f.ch:
-		return nil
+	case rsp := <-f.ch:
+		return rsp, nil
 	case <-f.after:
-		return api.ErrActorCallTimeout
+		return nil, api.ErrActorCallTimeout
 	}
 }
 
-func (f *Waiter) Done() {
-	f.ch <- struct{}{}
+func (f *chanWaiter) Done(message *api.RespondMessage) {
+	f.ch <- message
 }

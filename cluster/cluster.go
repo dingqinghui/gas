@@ -17,11 +17,9 @@ import (
 	"github.com/dingqinghui/gas/cluster/rpc/provider/nats"
 	"github.com/dingqinghui/gas/extend/xerror"
 	"github.com/duke-git/lancet/v2/maputil"
-	"github.com/duke-git/lancet/v2/slice"
-	"time"
 )
 
-func New(node api.INode) *cluster {
+func New(node api.INode) api.ICluster {
 	c := new(cluster)
 	c.SetNode(node)
 	c.Init()
@@ -29,7 +27,6 @@ func New(node api.INode) *cluster {
 }
 
 type cluster struct {
-	api.IActorSender
 	api.BuiltinModule
 	rpc       api.IRpc
 	discovery api.IDiscovery
@@ -80,24 +77,6 @@ func (c *cluster) balance(service string) api.INodeBase {
 	return lb.Do(nodes, nil)
 }
 
-func (c *cluster) Send(from, pid *api.Pid, methodName string, request interface{}) error {
-	c.standardPid(pid)
-	return c.rpc.Send(from, pid, methodName, request)
-}
-
-func (c *cluster) Broadcast(from *api.Pid, serviceName, methodName string, request interface{}) {
-	nodes := c.discovery.GetByKind(serviceName)
-	slice.ForEach(nodes, func(_ int, node api.INodeBase) {
-		pid := api.NewRemotePid(node.GetID(), serviceName)
-		_ = c.Send(from, pid, methodName, request)
-	})
-}
-
-func (c *cluster) Call(from, pid *api.Pid, funcName string, timeout time.Duration, request, reply interface{}) error {
-	c.standardPid(pid)
-	return c.rpc.Call(from, pid, funcName, timeout, request, reply)
-}
-
 func (c *cluster) Discovery() api.IDiscovery {
 	return c.discovery
 }
@@ -106,19 +85,16 @@ func (c *cluster) Rpc() api.IRpc {
 	return c.rpc
 }
 
-func (c *cluster) standardPid(pid *api.Pid) {
-	if pid == nil {
-		return
+func (c *cluster) NewPid(service string, lb api.IBalancer, user interface{}) *api.Pid {
+	nodes := c.Discovery().GetByKind(service)
+	node := lb.Do(nodes, user)
+	if node == nil {
+		return nil
 	}
-	if pid.GetNodeId() == "" && pid.GetName() != "" {
-		nodeBase := c.balance(pid.GetName())
-		if nodeBase == nil {
-			return
-		}
-		pid.NodeId = nodeBase.GetID()
-	}
+	return api.NewRemotePid(node.GetID(), service)
 }
-func (c *cluster) Stop() error {
+
+func (c *cluster) Stop() *api.Error {
 	if err := c.BuiltinStopper.Stop(); err != nil {
 		return err
 	}

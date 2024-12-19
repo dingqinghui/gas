@@ -25,15 +25,38 @@ type Service struct {
 	dict map[int32]*api.Pid
 }
 
-func (c *Service) OnInit(ctx api.IActorContext) error {
+func (c *Service) OnInit(ctx api.IActorContext) *api.Error {
 	_ = c.BuiltinActor.OnInit(ctx)
 	c.dict = make(map[int32]*api.Pid)
 	return nil
 }
-func (c *Service) Join(message *common.RpcRoomJoin) error {
-	c.dict[message.UserId] = c.Ctx.Message().From()
-	c.Ctx.Info("ChatService Join", zap.Any("message", message), zap.Any("message", c.Ctx.Message().From()))
-	return c.Ctx.Send(c.Ctx.Message().From(), "JoinSuccess", &common.ClientMessage{})
+
+// async handler
+func (c *Service) Join(message *common.RpcRoomJoin) *api.Error {
+	c.Ctx.Info("ChatService Join", zap.Any("message", message), zap.Any("message", c.Ctx.Message().From))
+	c.dict[message.UserId] = c.Ctx.Message().From
+	return nil
+}
+
+// sync handler
+func (c *Service) SyncJoin1(request *common.RpcRoomJoin) (*common.RpcRoomJoin, *api.Error) {
+	c.Ctx.Info("ChatService SyncJoin1", zap.Any("message", request), zap.Any("message", c.Ctx.Message().From))
+	return &common.RpcRoomJoin{UserId: 12}, api.Ok
+}
+
+// network handler
+func (c *Service) Chat(session *api.Session, message *common.ClientMessage) *api.Error {
+	c.Ctx.Info("ChatService Chat", zap.Any("message", message), zap.Any("message", c.Ctx.Message().From))
+	message.Content = "111111111111111"
+	// push to client
+	if err := c.Ctx.Push(session, 2, message); err != nil {
+		return err
+	}
+	// respond to client
+	if err := c.Ctx.Response(session, message); err != nil {
+		return err
+	}
+	return nil
 }
 
 //func (c *Service) Chat(ctx api.IActorContext, message *common.ClientMessage) error {
@@ -43,6 +66,8 @@ func (c *Service) Join(message *common.RpcRoomJoin) error {
 
 func RunChatNode(path string) {
 	chatNode := node.New(path)
-	_, _ = chatNode.ActorSystem().SpawnWithName("ChatService", func() api.IActor { return new(Service) }, nil)
+
 	chatNode.Run()
+	_, _ = chatNode.System().SpawnWithName("chat", func() api.IActor { return new(Service) }, nil)
+	chatNode.Wait()
 }

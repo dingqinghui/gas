@@ -9,18 +9,16 @@
 package actor
 
 import (
-	"errors"
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/reflectx"
 	"github.com/duke-git/lancet/v2/maputil"
-	"github.com/duke-git/lancet/v2/xerror"
-	"go.uber.org/zap"
 	"reflect"
 )
 
-const fixedArgNum = 1
+const fixedInnerArgNum = 2
+const fixedNetworkArgNum = 3
 
-func DefaultMethod(actor api.IActor) error { return nil }
+var typeOfBytes = reflect.TypeOf(([]byte)(nil))
 
 func NewRouterHub() api.IActorRouterHub {
 	r := new(RouterHub)
@@ -47,7 +45,7 @@ func (r *RouterHub) GetOrSet(actor api.IActor) api.IActorRouter {
 
 func NewRouter(name string, actor api.IActor) *Router {
 	r := new(Router)
-	r.dict = reflectx.SuitableMethods(actor, DefaultMethod)
+	r.dict = reflectx.SuitableMethods(actor)
 	r.name = name
 	return r
 }
@@ -62,51 +60,138 @@ func (h *Router) Get(name string) *reflectx.Method {
 	return v
 }
 
-func (h *Router) Call(ctx api.IActorContext, mbMsg api.IMailBoxMessage) error {
-	methodName := mbMsg.MethodName()
-	args := mbMsg.Args()
-	m, ok := h.dict[methodName]
-	if !ok || m == nil {
-		return xerror.New("actor %v not func:%v", h.name, methodName)
-	}
-	ctx.Debug("actor call", zap.String("actor", reflect.TypeOf(ctx.Actor()).String()),
-		zap.String("methodName", methodName), zap.Any("args", mbMsg.Args()))
-	return h.callMethod(ctx, m, args)
+func (h *Router) Set(name string, method *reflectx.Method) {
+	h.dict[name] = method
 }
 
-func (h *Router) callMethod(ctx api.IActorContext, m *reflectx.Method, args []interface{}) error {
-	if len(args) != m.ArgNum-fixedArgNum {
-		return errors.New("args count err")
-	}
-	argValues := make([]reflect.Value, m.ArgNum, m.ArgNum)
-	argValues[0] = reflect.ValueOf(ctx.Actor())
+type networkMethod struct {
+	*reflectx.Method
+}
 
-	for i, arg := range args {
-		if arg == nil {
-			arg = reflectx.NewByType(m.ArgTypes[i+fixedArgNum])
+func (m *networkMethod) NewRequest(ctx api.IActorContext, data []byte) (interface{}, *api.Error) {
+	if m.IsRawRequest() {
+		return data, nil
+	} else {
+		request := reflectx.NewByType(m.GetRequestType())
+		if data == nil {
+			return nil, nil
 		}
-		argValues[i+fixedArgNum] = reflect.ValueOf(arg)
+		if err := ctx.System().Serializer().Unmarshal(data, request); err != nil {
+			return nil, api.ErrJsonUnPack
+		}
+		return request, nil
 	}
+}
+
+func (m *networkMethod) IsRawRequest() bool {
+	return m.GetRequestType() == typeOfBytes
+}
+
+func (m *networkMethod) GetRequestType() reflect.Type {
+	return m.ArgTypes[2]
+}
+
+func (m *networkMethod) call(ctx api.IActorContext, msg *api.ActorMessage) *api.Error {
+	if len(m.ArgTypes) != fixedNetworkArgNum {
+		return api.ErrActorMethodArgNum
+	}
+	argValues := make([]reflect.Value, fixedNetworkArgNum, fixedNetworkArgNum)
+	argValues[0] = reflect.ValueOf(ctx.Actor())
+	argValues[1] = reflect.ValueOf(msg.Session)
+	request, err := m.NewRequest(ctx, msg.Data)
+	if err != nil {
+		return err
+	}
+	argValues[2] = reflect.ValueOf(request)
 	returnValues := m.Fun.Call(argValues)
 	if returnValues == nil {
 		return nil
 	}
 	errInter := returnValues[0].Interface()
 	if errInter != nil {
-		return errInter.(error)
+		return errInter.(*api.Error)
 	}
 	return nil
 }
 
-func (h *Router) NewArgs(methodName string) (request, reply interface{}, err error) {
-	method := h.Get(methodName)
-	if method == nil {
-		err = xerror.New("actor not method:%v", methodName)
+type innerMethod struct {
+	*reflectx.Method
+}
+
+func (m *innerMethod) NewRequest(ctx api.IActorContext, data []byte) (interface{}, *api.Error) {
+	if m.IsRawRequest() {
+		return data, nil
+	} else {
+		request := reflectx.NewByType(m.GetRequestType())
+		if data == nil {
+			return nil, nil
+		}
+		if err := ctx.System().Serializer().Unmarshal(data, request); err != nil {
+			return nil, api.ErrJsonUnPack
+		}
+		return request, nil
+	}
+}
+
+func (m *innerMethod) IsRawRequest() bool {
+	return m.GetRequestType() == typeOfBytes
+}
+
+func (m *innerMethod) GetRequestType() reflect.Type {
+	return m.ArgTypes[1]
+}
+
+func (m *innerMethod) call(ctx api.IActorContext, msg *api.ActorMessage) (rsp *api.RespondMessage) {
+	rsp = new(api.RespondMessage)
+	if m.ArgNum != fixedInnerArgNum {
+		rsp.Err = api.ErrActorArgsNum
 		return
 	}
-	request = reflectx.NewByType(method.ArgTypes[1])
-	if method.ArgNum >= fixedArgNum+2 {
-		reply = reflectx.NewByType(method.ArgTypes[2])
+	argValues := make([]reflect.Value, m.ArgNum, m.ArgNum)
+	argValues[0] = reflect.ValueOf(ctx.Actor())
+
+	request, err := m.NewRequest(ctx, msg.Data)
+	if err != nil {
+		rsp.Err = err
+		return
 	}
+	argValues[1] = reflect.ValueOf(request)
+	values := m.Fun.Call(argValues)
+	m.returnValues(ctx, values, rsp)
 	return
+}
+
+func (m *innerMethod) returnValues(ctx api.IActorContext, values []reflect.Value, rsp *api.RespondMessage) {
+	if values == nil {
+		return
+	}
+	returnCnt := len(values)
+	switch returnCnt {
+	case 1:
+		if !values[0].IsNil() {
+			errInter := values[0].Interface()
+			if errInter != nil {
+				rsp.Err = errInter.(*api.Error)
+			}
+		}
+	case 2:
+		if !values[0].IsNil() {
+			if buf, err := ctx.System().Serializer().Marshal(values[0].Interface()); err != nil {
+				rsp.Err = api.ErrMarshal
+				return
+			} else {
+				rsp.Data = buf
+			}
+		}
+		if !values[0].IsNil() {
+			errInter := values[1].Interface()
+			if errInter != nil {
+				rsp.Err = errInter.(*api.Error)
+			}
+		}
+	}
+}
+
+func (m *innerMethod) HasReply() bool {
+	return m.ArgNum >= fixedInnerArgNum+1
 }

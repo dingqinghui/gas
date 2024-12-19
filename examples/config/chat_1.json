@@ -20,8 +20,8 @@
     "tcp://127.0.0.1:8454"
   ],
   "node": {
-    "id": "chat_1",
+    "id": 1001,
     "address": "",
-    "tags": ["ChatService"]
+    "tags": ["chat"]
   }
 }

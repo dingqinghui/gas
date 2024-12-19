@@ -47,7 +47,7 @@ func (m *mailbox) RegisterHandlers(invoker api.IActorMessageInvoker, dispatcher 
 	m.dispatch = dispatcher
 }
 
-func (m *mailbox) PostMessage(msg api.IMailBoxMessage) error {
+func (m *mailbox) PostMessage(msg interface{}) *api.Error {
 	if msg == nil {
 		return nil
 	}
@@ -56,7 +56,7 @@ func (m *mailbox) PostMessage(msg api.IMailBoxMessage) error {
 	return m.schedule()
 }
 
-func (m *mailbox) schedule() error {
+func (m *mailbox) schedule() *api.Error {
 	if !m.dispatchStat.CompareAndSwap(idle, running) {
 		return nil
 	}
@@ -89,7 +89,7 @@ func (m *mailbox) run() {
 		i++
 		msg := m.queue.Pop()
 		if msg != nil {
-			_ = m.invokerMessage(msg.(api.IMailBoxMessage))
+			_ = m.invokerMessage(msg)
 		} else {
 			return
 		}
@@ -100,7 +100,7 @@ func (m *mailbox) run() {
 // @Description: 从队列中读取消息，并调用invoker处理
 // @receiver m
 // @return error
-func (m *mailbox) invokerMessage(msg api.IMailBoxMessage) error {
+func (m *mailbox) invokerMessage(msg interface{}) error {
 	if err := m.invoker.InvokerMessage(msg); err != nil {
 		return err
 	}

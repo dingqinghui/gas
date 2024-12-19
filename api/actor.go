@@ -14,91 +14,80 @@ import (
 )
 
 type (
-	ActorEmptyMessage = *struct{}
-
-	IActorWaiter interface {
-		Wait() error
-		Done()
-	}
-
+	ActorEmptyMessage    = *struct{}
 	ActorProducer        func() IActor
 	IActorMessageInvoker interface {
-		InvokerMessage(message IMailBoxMessage) error
+		InvokerMessage(message interface{}) *Error
 	}
 	IActorMailbox interface {
-		PostMessage(msg IMailBoxMessage) error
+		PostMessage(msg interface{}) *Error
 		RegisterHandlers(invoker IActorMessageInvoker, dispatcher IActorDispatcher)
 	}
 	IActorDispatcher interface {
-		Schedule(node INode, f func(), recoverFun func(err interface{})) error
+		Schedule(node INode, f func(), recoverFun func(err interface{})) *Error
 		Throughput() int
 	}
-
-	IMailBoxMessage interface {
-		MethodName() string
-		Args() []interface{}
-		Waiter() IActorWaiter
-		From() *Pid
-	}
-
 	IActorContext interface {
 		IZLogger
-		Message() IMailBoxMessage
+		Message() *ActorMessage
 		Process() IProcess
 		System() IActorSystem
 		Actor() IActor
 		Self() *Pid
 		InitParams() interface{}
-		RegisterName(name string) error
-		UnregisterName(name string) (*Pid, error)
+		RegisterName(name string) *Error
+		UnregisterName(name string) (*Pid, *Error)
 		Router() IActorRouter
-		Send(to *Pid, funcName string, request interface{}) error
-		Call(to *Pid, funcName string, timeout time.Duration, request, reply interface{}) error
+		Send(to *Pid, funcName string, request interface{}) *Error
+		Call(to *Pid, funcName string, request, reply interface{}) *Error
+		Response(session *Session, s2c interface{}) *Error
+		Push(session *Session, mid uint16, s2c interface{}) *Error
 	}
 
 	IProcess interface {
 		IStopper
 		Pid() *Pid
 		Context() IActorContext
-		Send(from *Pid, funcName string, request interface{}) error
-		CallAndWait(from *Pid, funcName string, timeout time.Duration, request, reply interface{}) error
-		Call(from *Pid, methodName string, timeout time.Duration, request, reply any) (IActorWaiter, error)
-		AsyncStop() error
+		PostMessage(message *ActorMessage) *Error
+		PostMessageAndWait(message *ActorMessage) (rsp *RespondMessage)
+		Stop() *Error
 	}
 
 	IActor interface {
-		OnInit(ctx IActorContext) error
-		OnStop() error
+		OnInit(ctx IActorContext) *Error
+		OnStop() *Error
 	}
 
 	IActorSystem interface {
 		IModule
-		Send(from, to *Pid, funcName string, request interface{}) error
-		Call(from, to *Pid, funcName string, timeout time.Duration, request, reply interface{}) error
-		Spawn(producer ActorProducer, params interface{}, opts ...ProcessOption) (*Pid, error)
-		SpawnWithName(name string, producer ActorProducer, params interface{}, opts ...ProcessOption) (*Pid, error)
-		RegisterName(name string, pid *Pid) error
-		UnregisterName(name string) (*Pid, error)
-		NextPid() *Pid
-		Kill(pid *Pid) error
-		RouterHub() IActorRouterHub
-		AddTimer(pid *Pid, d time.Duration, funcName string) error
-		Find(pid *Pid) IProcess
-	}
 
-	IActorSender interface {
-		Send(from, to *Pid, funcName string, request interface{}) error
-		Call(from, to *Pid, funcName string, timeout time.Duration, request, reply interface{}) error
+		Spawn(producer ActorProducer, params interface{}, opts ...ProcessOption) (*Pid, *Error)
+		SpawnWithName(name string, producer ActorProducer, params interface{}, opts ...ProcessOption) (*Pid, *Error)
+		NextPid() *Pid
+		Kill(pid *Pid) *Error
+		RouterHub() IActorRouterHub
+		AddTimer(pid *Pid, d time.Duration, funcName string) *Error
+		Find(pid *Pid) IProcess
+		Timeout() time.Duration
+		RegisterName(name string, pid *Pid) *Error
+		UnregisterName(name string) (*Pid, *Error)
+		PostMessage(to *Pid, message *ActorMessage) *Error
+		Send(from, to *Pid, funcName string, request interface{}) *Error
+		Call(from, to *Pid, funcName string, request, reply interface{}) *Error
+		SetTimeout(timeout time.Duration)
+		SetSerializer(serializer ISerializer)
+		Serializer() ISerializer
+		IsLocalPid(pid *Pid) bool
 	}
 
 	IActorRouterHub interface {
 		Set(name string, router IActorRouter)
 		GetOrSet(actor IActor) IActorRouter
 	}
+
 	IActorRouter interface {
 		Get(name string) *reflectx.Method
-		Call(ctx IActorContext, env IMailBoxMessage) error
-		NewArgs(methodName string) (request, reply interface{}, err error)
+		Set(name string, method *reflectx.Method)
 	}
 
 	BuiltinActor struct {
@@ -111,11 +100,12 @@ type (
 	}
 )
 
-func (r *BuiltinActor) OnInit(ctx IActorContext) error {
+func (r *BuiltinActor) OnInit(ctx IActorContext) *Error {
 	r.Ctx = ctx
 	return nil
 }
-func (r *BuiltinActor) OnStop() error {
+
+func (r *BuiltinActor) OnStop() *Error {
 	return nil
 }
 
@@ -127,5 +117,62 @@ func WithActorDispatcher(dispatcher IActorDispatcher) ProcessOption {
 func WithActorMailBox(mailbox IActorMailbox) ProcessOption {
 	return func(b *ActorProcessOptions) {
 		b.Mailbox = mailbox
+	}
+}
+
+type RespondMessage struct {
+	Data []byte
+	Err  *Error
+}
+
+type RespondFun func(rsp *RespondMessage) *Error
+
+type ActorMessageType = byte
+
+const (
+	ActorNetMessage = iota
+	ActorInnerMessage
+)
+
+type ActorBaseMessage struct {
+}
+
+type ActorMessage struct {
+	Typ        int
+	MethodName string
+	From       *Pid
+	To         *Pid
+	Data       []byte
+	Mid        uint16
+	Session    *Session
+	respond    RespondFun
+}
+
+func (m *ActorMessage) Respond(rsp *RespondMessage) {
+	if m.respond == nil {
+		return
+	}
+	m.respond(rsp)
+}
+func (m *ActorMessage) SetRespond(respond RespondFun) {
+	m.respond = respond
+}
+
+func BuildNetMessage(session *Session, methodName string, mid uint16, data []byte) *ActorMessage {
+	return &ActorMessage{
+		Typ:        ActorNetMessage,
+		MethodName: methodName,
+		Data:       data,
+		Mid:        mid,
+		Session:    session,
+	}
+}
+func BuildInnerMessage(from, to *Pid, methodName string, data []byte) *ActorMessage {
+	return &ActorMessage{
+		From:       from,
+		To:         to,
+		Typ:        ActorInnerMessage,
+		MethodName: methodName,
+		Data:       data,
 	}
 }

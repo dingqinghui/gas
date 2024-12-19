@@ -13,10 +13,10 @@ import (
 	"github.com/panjf2000/gnet/v2"
 )
 
-type NetConnectionType int
+type NetEntityType int
 
 const (
-	_ NetConnectionType = iota
+	_ NetEntityType = iota
 	NetListener
 	NetConnector
 )
@@ -25,9 +25,10 @@ type NetPacketType byte
 
 type INetServer interface {
 	IModule
-	Link(session ISession, c gnet.Conn)
-	Ref(c gnet.Conn) ISession
+	Link(session INetEntity, c gnet.Conn)
+	Ref(c gnet.Conn) INetEntity
 	Unlink(c gnet.Conn)
+	Typ() NetEntityType
 }
 
 type INetPacket interface {
@@ -41,24 +42,32 @@ type INetPackCodec interface {
 	Decode(reader gnet.Reader) []INetPacket
 }
 
-type INetRouter interface {
-	Register(msgId uint16, methodName string)
-	Get(msgId uint16) string
+type INetRouters interface {
+	Add(msgId uint16, router INetRouter)
+	Get(msgId uint16) INetRouter
 }
 
-type ISession interface {
+type INetRouter interface {
+	GetNodeType() string
+	GetActorId() uint64
+	GetMethod() string
+}
+
+type INetEntity interface {
 	ID() uint64
-	Type() NetConnectionType
+	Type() NetEntityType
 	Network() string
 	LocalAddr() string
 	RemoteAddr() string
 	Traffic(c gnet.Conn) error
-	SendPacket(packet *BuiltinNetworkPacket) error
-	SendMessage(msgId uint16, s2c interface{}) error
-	Close(reason error) error
-	Closed(err error) error
+	SendPacket(packet *BuiltinNetworkPacket) *Error
+	SendMessage(msgId uint16, s2c interface{}) *Error
+	SendRawMessage(msgId uint16, data []byte) *Error
+	Close(reason error) *Error
+	Closed(err error) *Error
 	Node() INode
 	RawCon() gnet.Conn
+	GetAgent() *Pid
 }
 
 type BuiltinNetworkPacket struct {

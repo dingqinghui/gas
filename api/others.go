@@ -9,7 +9,6 @@
 package api
 
 import (
-	"errors"
 	"sync/atomic"
 )
 
@@ -21,7 +20,7 @@ type (
 
 	IStopper interface {
 		IsStop() bool
-		Stop() error
+		Stop() *Error
 	}
 
 	BuiltinStopper struct {
@@ -62,9 +61,9 @@ func (b *BuiltinStopper) IsStop() bool {
 	return b.stop.CompareAndSwap(true, true)
 }
 
-func (b *BuiltinStopper) Stop() error {
+func (b *BuiltinStopper) Stop() *Error {
 	if !b.stop.CompareAndSwap(false, true) {
-		return errors.New("stopped")
+		return ErrStopped
 	}
 	return nil
 }

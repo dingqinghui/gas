@@ -42,15 +42,16 @@ func (d *discovery) Run() {
 		return
 	}
 	// watch node
-	xerror.Assert(d.provider.WatchNode(d.clusterName, func(waitIndex uint64, nodeDict map[string]*api.BaseNode) {
+	api.Assert(d.provider.WatchNode(d.clusterName, func(waitIndex uint64, nodeDict map[string]*api.BaseNode) {
 		if waitIndex <= d.waitIndex {
 			return
 		}
 		d.waitIndex = waitIndex
 		d.nodeDict = nodeDict
 	}))
+
 	// add node
-	xerror.Assert(d.AddNode(d.Node().Base()))
+	api.Assert(d.AddNode(d.Node().Base()))
 }
 
 func (d *discovery) GetById(nodeId string) api.INodeBase {
@@ -74,25 +75,25 @@ func (d *discovery) GetAll() (result []api.INodeBase) {
 	return
 }
 
-func (d *discovery) AddNode(node api.INodeBase) error {
+func (d *discovery) AddNode(node api.INodeBase) *api.Error {
 	if d.provider == nil {
 		return api.ErrDiscoveryProviderIsNil
 	}
 	return d.provider.AddNode(node)
 }
 
-func (d *discovery) RemoveNode(nodeId string) error {
+func (d *discovery) RemoveNode(nodeId string) *api.Error {
 	if d.provider == nil {
 		return api.ErrDiscoveryProviderIsNil
 	}
 	return d.provider.RemoveNode(nodeId)
 }
 
-func (d *discovery) Stop() error {
+func (d *discovery) Stop() *api.Error {
 	if err := d.BuiltinStopper.Stop(); err != nil {
 		return err
 	}
-	if err := d.RemoveNode(d.Node().GetID()); err != nil {
+	if err := d.RemoveNode(convertor.ToString(d.Node().GetID())); err != nil {
 		return err
 	}
 	if d.provider != nil {

@@ -10,6 +10,7 @@ package zlog
 
 import (
 	"github.com/dingqinghui/gas/api"
+	"github.com/duke-git/lancet/v2/convertor"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -62,7 +63,7 @@ func (z *ZLogger) Init() {
 		zap.AddCaller(),
 		zap.AddStacktrace(zap.DPanicLevel),
 		zap.AddCallerSkip(1),
-		zap.Fields(zap.String("nodeId", z.Node().GetID())),
+		zap.Fields(zap.String("nodeId", convertor.ToString(z.Node().GetID()))),
 	}
 	options = append(options, z.cfg.getZapOption()...)
 	z.logger = zap.New(mulCore, options...)
@@ -72,7 +73,7 @@ func (z *ZLogger) Init() {
 func (z *ZLogger) Name() string {
 	return "logger"
 }
-func (z *ZLogger) Stop() error {
+func (z *ZLogger) Stop() *api.Error {
 	if err := z.BuiltinStopper.Stop(); err != nil {
 		return err
 	}

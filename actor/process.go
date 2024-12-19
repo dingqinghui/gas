@@ -10,7 +10,6 @@ package actor
 
 import (
 	"github.com/dingqinghui/gas/api"
-	"time"
 )
 
 func NewBaseProcess(ctx api.IActorContext, mailbox api.IActorMailbox) api.IProcess {
@@ -33,7 +32,7 @@ func (p *ProcessActor) Pid() *api.Pid {
 	return p.ctx.Self()
 }
 
-func (p *ProcessActor) valid() error {
+func (p *ProcessActor) valid() *api.Error {
 	if p.IsStop() {
 		return api.ErrActorStopped
 	}
@@ -43,62 +42,47 @@ func (p *ProcessActor) valid() error {
 	return nil
 }
 
-func (p *ProcessActor) Send(from *api.Pid, methodName string, request interface{}) error {
+func (p *ProcessActor) PostMessage(message *api.ActorMessage) *api.Error {
 	if err := p.valid(); err != nil {
 		return err
 	}
-	env := NewMailBoxMessage(from, methodName, nil, request)
-	return p.mailbox.PostMessage(env)
+	return p.mailbox.PostMessage(message)
 }
 
-func (p *ProcessActor) CallAndWait(from *api.Pid, methodName string, timeout time.Duration, request, reply any) error {
+func (p *ProcessActor) PostMessageAndWait(message *api.ActorMessage) (rsp *api.RespondMessage) {
+	rsp = new(api.RespondMessage)
 	if err := p.valid(); err != nil {
-		return err
+		rsp.Err = err
+		return
 	}
-	w := newWaiter(timeout)
-	mbm := NewMailBoxMessage(from, methodName, w, request, reply)
-	if err := p.mailbox.PostMessage(mbm); err != nil {
-		return err
+	waiter := newChanWaiter(p.ctx.System().Timeout())
+	message.SetRespond(func(rsp *api.RespondMessage) *api.Error {
+		waiter.Done(rsp)
+		return nil
+	})
+	if err := p.PostMessage(message); err != nil {
+		rsp.Err = err
+		return
 	}
-	if err := w.Wait(); err != nil {
-		return err
+	_rsp, err := waiter.Wait()
+	if !api.IsOk(err) {
+		rsp.Err = err
+		return
 	}
-	return nil
-}
-func (p *ProcessActor) Call(from *api.Pid, methodName string, timeout time.Duration, request, reply any) (api.IActorWaiter, error) {
-	if err := p.valid(); err != nil {
-		return nil, err
+	if _rsp == nil {
+		return
 	}
-	w := newWaiter(timeout)
-	mbm := NewMailBoxMessage(from, methodName, w, request, reply)
-	if err := p.mailbox.PostMessage(mbm); err != nil {
-		return nil, err
-	}
-	return w, nil
+	rsp = _rsp
+	return
 }
 
-func (p *ProcessActor) Stop() error {
+func (p *ProcessActor) Stop() *api.Error {
 	if err := p.BuiltinStopper.Stop(); err != nil {
 		return err
 	}
-	w := newWaiter(time.Millisecond * 10)
-	env := NewMailBoxMessage(nil, StopFuncName, w)
-	if err := p.mailbox.PostMessage(env); err != nil {
-		return err
-	}
-	if err := w.Wait(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p *ProcessActor) AsyncStop() error {
-	if err := p.BuiltinStopper.Stop(); err != nil {
-		return err
-	}
-	env := NewMailBoxMessage(nil, StopFuncName, nil)
-	if err := p.mailbox.PostMessage(env); err != nil {
-		return err
+	rsp := p.PostMessageAndWait(buildStopMessage())
+	if !api.IsOk(rsp.Err) {
+		return rsp.Err
 	}
 	return nil
 }

@@ -13,14 +13,16 @@ import (
 	"github.com/dingqinghui/gas/actor"
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/cluster"
+	"github.com/dingqinghui/gas/extend/snowflake"
+	"github.com/dingqinghui/gas/extend/xerror"
 	"github.com/dingqinghui/gas/workers"
 	"github.com/dingqinghui/gas/zlog"
+	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func New(configPath string) api.INode {
@@ -46,6 +48,7 @@ type Node struct {
 	cluster     api.ICluster
 	workers     api.IWorkers
 	modules     []api.IModule
+	idWorker    *snowflake.IdWorker
 	stopChan    chan string
 }
 
@@ -76,11 +79,15 @@ func (a *Node) initViper() {
 func (a *Node) initBaseNode() {
 	vp := a.viper.Sub("node")
 	a.BaseNode.Name = a.viper.GetString("cluster.name")
-	a.BaseNode.Id = vp.GetString("id")
+	a.BaseNode.Id = vp.GetUint64("id")
 	a.BaseNode.Tags = vp.GetStringSlice("tags")
 	a.BaseNode.Meta = vp.GetStringMapString("meta")
 
-	fmt.Printf("init node id:%s  type:%s\n", a.BaseNode.Id, a.BaseNode.Name)
+	fmt.Printf("init node id:%d  type:%s\n", a.BaseNode.Id, a.BaseNode.Name)
+
+	idWorker, err := snowflake.NewIdWorker(int64(a.GetID()))
+	xerror.Assert(err)
+	a.idWorker = idWorker
 }
 
 func (a *Node) initLogger() {
@@ -113,7 +120,7 @@ func (a *Node) GetViper() *viper.Viper {
 	return a.viper
 }
 
-func (a *Node) ActorSystem() api.IActorSystem {
+func (a *Node) System() api.IActorSystem {
 	return a.actorSystem
 }
 
@@ -132,30 +139,7 @@ func (a *Node) Workers() api.IWorkers {
 }
 
 func (a *Node) Name() string {
-	return "node" + a.GetID()
-}
-
-func (a *Node) isLocal(pid *api.Pid) bool {
-	return pid.GetNodeId() == a.GetID()
-}
-
-func (a *Node) Send(from, pid *api.Pid, funcName string, request interface{}) error {
-	if !api.ValidPid(pid) {
-		return api.ErrInvalidPid
-	}
-	if a.isLocal(pid) {
-		return a.ActorSystem().Send(from, pid, funcName, request)
-	} else {
-		return a.Cluster().Send(from, pid, funcName, request)
-	}
-}
-
-func (a *Node) Call(from, pid *api.Pid, funcName string, timeout time.Duration, request, reply interface{}) error {
-	if a.isLocal(pid) {
-		return a.ActorSystem().Call(from, pid, funcName, timeout, request, reply)
-	} else {
-		return a.Cluster().Call(from, pid, funcName, timeout, request, reply)
-	}
+	return "node" + convertor.ToString(a.GetID())
 }
 
 func (a *Node) Wait() {
@@ -167,6 +151,17 @@ func (a *Node) Wait() {
 	case reason := <-a.stopChan:
 		a.terminate(reason)
 	}
+}
+
+func (a *Node) NextId() int64 {
+	if a.idWorker == nil {
+		return 0
+	}
+	id, err := a.idWorker.NextId()
+	if err != nil {
+		a.Log().Error("nextId", zap.Error(err))
+	}
+	return id
 }
 
 func (a *Node) Terminate(reason string) {

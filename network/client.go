@@ -17,27 +17,26 @@ import (
 
 func Dial(node api.INode, network, addr string, options ...Option) {
 	opts := loadOptions(options...)
-	meta := newMeta(node, api.NetConnector, opts)
 	switch network {
 	case "udp", "udp4", "udp6":
-		udpDial(meta, network, addr)
+		udpDial(node, opts, network, addr)
 	case "tcp", "tcp4", "tcp6":
-		tcpDial(meta, network, addr)
+		tcpDial(node, opts, network, addr)
 	}
 }
 
-func tcpDial(meta *Meta, network, addr string) {
+func tcpDial(node api.INode, opts *Options, network, addr string) {
 	protoAddr := fmt.Sprintf("%v://%v", network, addr)
-	handler := newTcpServer(meta, protoAddr)
+	handler := newTcpServer(node, api.NetConnector, opts, protoAddr)
 	dial(handler, network, addr)
 }
 
-func udpDial(meta *Meta, network, addr string) {
+func udpDial(node api.INode, opts *Options, network, addr string) {
 	protoAddr := fmt.Sprintf("%v://%v", network, addr)
-	server := newUdpServer(meta, protoAddr)
+	server := newUdpServer(node, api.NetConnector, opts, protoAddr)
 	raw := dial(server, network, addr)
-	session := newSession(server, meta, raw)
-	server.Link(session, raw)
+	entity := newEntity(server, opts, raw)
+	server.Link(entity, raw)
 }
 
 func dial(handler gnet.EventHandler, network, addr string) gnet.Conn {

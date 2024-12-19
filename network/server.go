@@ -26,32 +26,31 @@ func newService(node api.INode, protoAddr string, options ...Option) api.INetSer
 	proto, _, err := netx.ParseProtoAddr(protoAddr)
 	xerror.Assert(err)
 	opts := loadOptions(options...)
-	meta := newMeta(node, api.NetListener, opts)
 	switch proto {
 	case "udp", "udp4", "udp6":
-		return newUdpServer(meta, protoAddr)
+		return newUdpServer(node, api.NetListener, opts, protoAddr)
 	case "tcp", "tcp4", "tcp6":
-		return newTcpServer(meta, protoAddr)
+		return newTcpServer(node, api.NetListener, opts, protoAddr)
 	}
 	return nil
 }
 
-func newTcpServer(meta *Meta, protoAddr string) *tcpServer {
+func newTcpServer(node api.INode, typ api.NetEntityType, opts *Options, protoAddr string) *tcpServer {
 	b := new(tcpServer)
-	b.builtinServer = newBuiltinServer(protoAddr, meta)
+	b.builtinServer = newBuiltinServer(node, typ, opts, protoAddr)
 	return b
 }
 
-func newUdpServer(meta *Meta, protoAddr string) *udpServer {
+func newUdpServer(node api.INode, typ api.NetEntityType, opts *Options, protoAddr string) *udpServer {
 	b := new(udpServer)
-	b.builtinServer = newBuiltinServer(protoAddr, meta)
-	b.dict = maputil.NewConcurrentMap[string, api.ISession](10)
+	b.builtinServer = newBuiltinServer(node, typ, opts, protoAddr)
+	b.dict = maputil.NewConcurrentMap[string, api.INetEntity](10)
 	return b
 }
 
 type udpServer struct {
 	*builtinServer
-	dict *maputil.ConcurrentMap[string, api.ISession]
+	dict *maputil.ConcurrentMap[string, api.INetEntity]
 }
 
 func (b *udpServer) Run() {
@@ -59,38 +58,48 @@ func (b *udpServer) Run() {
 }
 
 func (b *udpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
-	session := b.Ref(c)
-	if session == nil {
-		session = newSession(b, b.meta, c)
+	entity := b.Ref(c)
+	if entity == nil {
+		entity = newEntity(b, b.opts, c)
+		b.Link(entity, c)
 	}
-	if err := session.Traffic(c); err != nil {
+	if err := entity.Traffic(c); err != nil {
 		b.Log().Error("udp server traffic err",
-			zap.Uint64("sessionId", session.ID()), zap.Error(err))
+			zap.String("remote", entity.RemoteAddr()), zap.Error(err))
 		return gnet.Close
 	}
 	return
 }
 
-func (b *udpServer) Link(session api.ISession, c gnet.Conn) {
+func (b *udpServer) Link(entity api.INetEntity, c gnet.Conn) {
+	if c == nil || c.RemoteAddr() == nil {
+		return
+	}
 	remoteAddr := c.RemoteAddr().String()
-	b.dict.Set(remoteAddr, session)
-	c.SetContext(session)
+	b.dict.Set(remoteAddr, entity)
+	c.SetContext(entity)
 }
 
-func (b *udpServer) Ref(c gnet.Conn) api.ISession {
+func (b *udpServer) Ref(c gnet.Conn) api.INetEntity {
+	if c == nil || c.RemoteAddr() == nil {
+		return nil
+	}
 	remoteAddr := c.RemoteAddr().String()
-	session, _ := b.dict.Get(remoteAddr)
-	return session
+	entity, _ := b.dict.Get(remoteAddr)
+	return entity
 }
 
 func (b *udpServer) Unlink(c gnet.Conn) {
-	remoteAddr := c.RemoteAddr().String()
-	session := b.Ref(c)
-	b.dict.Delete(remoteAddr)
-	if session == nil {
+	if c == nil || c.RemoteAddr() == nil {
 		return
 	}
-	_ = session.Closed(nil)
+	remoteAddr := c.RemoteAddr().String()
+	entity := b.Ref(c)
+	b.dict.Delete(remoteAddr)
+	if entity == nil {
+		return
+	}
+	_ = entity.Closed(nil)
 }
 
 type tcpServer struct {
@@ -102,20 +111,19 @@ func (b *tcpServer) Run() {
 }
 
 func (b *tcpServer) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
-	newSession(b, b.meta, c)
+	entity := newEntity(b, b.opts, c)
+	b.Link(entity, c)
 	return nil, gnet.None
 }
 
 func (b *tcpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 	var err error
-	session := b.Ref(c)
-	if session == nil {
-		b.Log().Warn("tcp server traffic err",
-			zap.Uint64("sessionId", session.ID()),
-			zap.Error(api.ErrNetSessionIsNil))
+	entity := b.Ref(c)
+	if entity == nil {
+		b.Log().Warn("tcp server traffic err", zap.Error(api.ErrNetEntityIsNil))
 		return gnet.Close
 	}
-	if err = session.Traffic(c); err != nil {
+	if err = entity.Traffic(c); err != nil {
 		return gnet.Close
 	}
 	return
@@ -124,23 +132,22 @@ func (b *tcpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 // OnClose fires when a connection has been closed.
 // The parameter err is the last known connection error.
 func (b *tcpServer) OnClose(c gnet.Conn, err error) (action gnet.Action) {
-	session := b.Ref(c)
-	if session == nil {
+	entity := b.Ref(c)
+	if entity == nil {
 		b.Log().Warn("tcp server onclose err",
-			zap.Uint64("sessionId", session.ID()),
-			zap.Error(api.ErrNetSessionIsNil))
+			zap.Error(api.ErrNetEntityIsNil))
 		return
 	}
-	if err = session.Closed(err); err != nil {
+	if err = entity.Closed(err); err != nil {
 		b.Log().Error("tcp server onclose err",
-			zap.Uint64("sessionId", session.ID()),
+			zap.String("remote", entity.RemoteAddr()),
 			zap.Error(err))
 		return 0
 	}
 	return
 }
 
-func (b *tcpServer) Ref(c gnet.Conn) api.ISession {
+func (b *tcpServer) Ref(c gnet.Conn) api.INetEntity {
 	if c == nil {
 		return nil
 	}
@@ -148,17 +155,19 @@ func (b *tcpServer) Ref(c gnet.Conn) api.ISession {
 	if ctx == nil {
 		return nil
 	}
-	return ctx.(api.ISession)
+	return ctx.(api.INetEntity)
 }
 
-func (b *tcpServer) Link(session api.ISession, c gnet.Conn) {
-	c.SetContext(session)
+func (b *tcpServer) Link(entity api.INetEntity, c gnet.Conn) {
+	c.SetContext(entity)
 }
 
-func newBuiltinServer(protoAddr string, meta *Meta) *builtinServer {
+func newBuiltinServer(node api.INode, typ api.NetEntityType, opts *Options, protoAddr string) *builtinServer {
 	b := new(builtinServer)
 	b.protoAddr = protoAddr
-	b.meta = meta
+	b.node = node
+	b.typ = typ
+	b.opts = opts
 	b.Init()
 	return b
 }
@@ -166,7 +175,9 @@ func newBuiltinServer(protoAddr string, meta *Meta) *builtinServer {
 type builtinServer struct {
 	gnet.BuiltinEventEngine
 	api.BuiltinModule
-	meta        *Meta
+	node        api.INode
+	opts        *Options
+	typ         api.NetEntityType
 	protoAddr   string
 	proto, addr string
 	eng         gnet.Engine
@@ -177,22 +188,29 @@ func (b *builtinServer) Init() {
 	xerror.Assert(err)
 	b.proto = proto
 	b.addr = addr
-	b.SetNode(b.meta.node)
+	b.SetNode(b.node)
 }
 func (b *builtinServer) OnBoot(eng gnet.Engine) (action gnet.Action) {
 	b.eng = eng
 	return gnet.None
 }
 func (b *builtinServer) OnShutdown(eng gnet.Engine) {}
-func (b *builtinServer) Stop() error {
+func (b *builtinServer) Stop() *api.Error {
 	if err := b.BuiltinStopper.Stop(); err != nil {
 		return err
 	}
-	return b.eng.Stop(context.Background())
+	_ = b.eng.Stop(context.Background())
+	return nil
 }
 func (b *builtinServer) run(handler gnet.EventHandler) {
 	b.Node().Workers().Submit(func() {
-		xerror.Assert(gnet.Run(handler, b.protoAddr, b.meta.opts.GNetOpts...))
+		xerror.Assert(gnet.Run(handler, b.protoAddr, b.Options().GNetOpts...))
 	}, nil)
 }
 func (b *builtinServer) Unlink(c gnet.Conn) {}
+func (b *builtinServer) Options() *Options {
+	return b.opts
+}
+func (b *builtinServer) Typ() api.NetEntityType {
+	return b.typ
+}

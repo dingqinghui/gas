@@ -16,7 +16,7 @@ import (
 )
 
 type Option func(*Options)
-type HandshakeAuthFunc func(session api.ISession, data []byte) ([]byte, error)
+type HandshakeAuthFunc func(session api.INetEntity, data []byte) ([]byte, *api.Error)
 
 func loadOptions(options ...Option) *Options {
 	opts := defaultOptions()
@@ -31,12 +31,12 @@ func defaultOptions() *Options {
 		AgentProducer: func() api.IActor {
 			return new(AgentActor)
 		},
-		HandshakeAuth: func(session api.ISession, data []byte) ([]byte, error) {
+		HandshakeAuth: func(session api.INetEntity, data []byte) ([]byte, *api.Error) {
 			return nil, nil
 		},
 		HandshakeBody:    nil,
 		GNetOpts:         nil,
-		Router:           new(Router),
+		Router:           new(Routers),
 		Serializer:       serializer.Json,
 		HeartBeatTimeout: time.Second * 5,
 	}
@@ -48,7 +48,7 @@ type Options struct {
 	HandshakeAuth    HandshakeAuthFunc
 	HandshakeBody    []byte
 	GNetOpts         []gnet.Option
-	Router           api.INetRouter
+	Router           api.INetRouters
 	Serializer       api.ISerializer
 	HeartBeatTimeout time.Duration
 }
@@ -59,7 +59,7 @@ func WithAgentProducer(producer api.ActorProducer) Option {
 	}
 }
 
-func WithRouter(router api.INetRouter) Option {
+func WithRouter(router api.INetRouters) Option {
 	return func(op *Options) {
 		op.Router = router
 	}

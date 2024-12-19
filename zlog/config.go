@@ -10,6 +10,7 @@ package zlog
 
 import (
 	"github.com/dingqinghui/gas/api"
+	"github.com/duke-git/lancet/v2/convertor"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"io"
@@ -32,7 +33,7 @@ func initConfig(node api.INode) *config {
 
 	c.level = zapcore.Level(viper.GetInt("level"))
 	path := viper.GetString("path")
-	c.path = filepath.Join(path, node.GetID())
+	c.path = filepath.Join(path, convertor.ToString(node.GetID()))
 	c.printConsole = viper.GetBool("printConsole")
 	return c
 }

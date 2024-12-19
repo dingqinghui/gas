@@ -18,6 +18,7 @@
   },
   "node": {
     "id": "client_1",
-    "address": ""
+    "address": "",
+    "tags": ["client"]
   }
 }

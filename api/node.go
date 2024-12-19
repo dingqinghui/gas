@@ -8,12 +8,14 @@
 
 package api
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+)
 
 type (
 	INodeBase interface {
 		GetName() string
-		GetID() string
+		GetID() uint64
 		GetAddress() string
 		GetPort() int
 		GetTags() []string
@@ -22,16 +24,16 @@ type (
 
 	INode interface {
 		INodeBase
-		IActorSender
 		Init()
 		Run()
 		Wait()
 		GetViper() *viper.Viper
-		ActorSystem() IActorSystem
+		System() IActorSystem
 		Log() IZLogger
 		Cluster() ICluster
 		Base() INodeBase
 		Workers() IWorkers
+		NextId() int64
 		AddModule(modules ...IModule)
 		Terminate(reason string)
 		//App() IApp
@@ -39,10 +41,11 @@ type (
 	}
 
 	BaseNode struct {
-		Name, Id, Address string
-		Port              int
-		Tags              []string
-		Meta              map[string]string
+		Id            uint64
+		Name, Address string
+		Port          int
+		Tags          []string
+		Meta          map[string]string
 	}
 
 	Topology struct {
@@ -62,7 +65,7 @@ func (b *BaseNode) GetName() string {
 	return b.Name
 }
 
-func (b *BaseNode) GetID() string {
+func (b *BaseNode) GetID() uint64 {
 	return b.Id
 }
 
@@ -82,30 +85,30 @@ func (b *BaseNode) GetMeta() map[string]string {
 	return b.Meta
 }
 
-func NewNodeList() *NodeList {
-	return &NodeList{
-		Dict: make(map[string]*BaseNode),
-	}
-}
-
-func (m *NodeList) UpdateClusterTopology(nodeDict map[string]*BaseNode, lastEventId uint64) *Topology {
-	if m.LastEventId >= lastEventId {
-		return nil
-	}
-	tplg := &Topology{EventId: lastEventId}
-	for _, node := range nodeDict {
-		if _, ok := m.Dict[node.GetID()]; ok {
-			tplg.Alive = append(tplg.Alive, node)
-		} else {
-			tplg.Joined = append(tplg.Joined, node)
-		}
-	}
-	for id := range m.Dict {
-		if _, ok := nodeDict[id]; !ok {
-			tplg.Left = append(tplg.Left, m.Dict[id])
-		}
-	}
-	m.Dict = nodeDict
-	m.LastEventId = lastEventId
-	return tplg
-}
+//func NewNodeList() *NodeList {
+//	return &NodeList{
+//		Dict: make(map[string]*BaseNode),
+//	}
+//}
+//
+//func (m *NodeList) UpdateClusterTopology(nodeDict map[string]*BaseNode, lastEventId uint64) *Topology {
+//	if m.LastEventId >= lastEventId {
+//		return nil
+//	}
+//	tplg := &Topology{EventId: lastEventId}
+//	for _, node := range nodeDict {
+//		if _, ok := m.Dict[node.GetID()]; ok {
+//			tplg.Alive = append(tplg.Alive, node)
+//		} else {
+//			tplg.Joined = append(tplg.Joined, node)
+//		}
+//	}
+//	for id := range m.Dict {
+//		if _, ok := nodeDict[id]; !ok {
+//			tplg.Left = append(tplg.Left, m.Dict[id])
+//		}
+//	}
+//	m.Dict = nodeDict
+//	m.LastEventId = lastEventId
+//	return tplg
+//}

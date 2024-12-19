@@ -73,34 +73,34 @@ func (c *Conn) Call(topic string, data []byte, timeout time.Duration) ([]byte, e
 // @param subj
 // @param data
 // @return err
-func (c *Conn) Send(topic string, data []byte) (err error) {
-	if err = c.rawCon.Publish(topic, data); err != nil {
+func (c *Conn) Send(topic string, data []byte) *api.Error {
+	if err := c.rawCon.Publish(topic, data); err != nil {
 		c.Log().Error("nats publish error", zap.Error(err))
-		return
+		return api.ErrNatsSend
 	}
-	c.Log().Info("nats request", zap.String("topic", topic))
-	return
+	c.Log().Debug("nats request", zap.String("topic", topic))
+	return nil
 }
 
 func (c *Conn) Subscribe(subject string, process api.RpcProcessHandler) {
-
 	_, chanErr := c.rawCon.ChanSubscribe(subject, c.msgChan)
 	if chanErr != nil {
 		c.Log().Error("nats chan subscribe error", zap.Error(chanErr))
 		return
 	}
-
 	c.Node().Workers().Submit(func() {
 		for msg := range c.msgChan {
-			process(msg.Subject, msg.Data, func(data []byte) {
-				if data == nil || msg.Reply == "" {
-					return
-				}
+			respond := func(data []byte) *api.Error {
 				if err := msg.Respond(data); err != nil {
 					c.Log().Error("nats chan respond error", zap.Error(err))
-					return
+					return api.ErrNatsRespond
 				}
-			})
+				return nil
+			}
+			if msg.Reply == "" {
+				respond = nil
+			}
+			process(msg.Subject, msg.Data, respond)
 		}
 
 	}, func(err interface{}) {
@@ -108,7 +108,7 @@ func (c *Conn) Subscribe(subject string, process api.RpcProcessHandler) {
 	})
 }
 
-func (c *Conn) Stop() error {
+func (c *Conn) Stop() *api.Error {
 	if err := c.BuiltinStopper.Stop(); err != nil {
 		return err
 	}

@@ -9,25 +9,43 @@
 package network
 
 import (
+	"github.com/dingqinghui/gas/api"
 	"sync"
 )
 
-func NewRouter() *Router {
-	return &Router{}
+func NewRouters() *Routers {
+	return &Routers{}
 }
 
-type Router struct {
+type Routers struct {
 	dict sync.Map
 }
 
-func (b *Router) Register(msgId uint16, methodName string) {
-	b.dict.Store(msgId, methodName)
+func (b *Routers) Add(mid uint16, router api.INetRouter) {
+	b.dict.Store(mid, router)
 }
 
-func (b *Router) Get(msgId uint16) string {
+func (b *Routers) Get(msgId uint16) api.INetRouter {
 	v, ok := b.dict.Load(msgId)
 	if !ok {
-		return ""
+		return nil
 	}
-	return v.(string)
+	return v.(api.INetRouter)
+}
+
+type Router struct {
+	NodeType string
+	ActorId  uint64
+	Method   string
+}
+
+func (b *Router) GetNodeType() string {
+	return b.NodeType
+}
+
+func (b *Router) GetActorId() uint64 {
+	return b.ActorId
+}
+func (b *Router) GetMethod() string {
+	return b.Method
 }

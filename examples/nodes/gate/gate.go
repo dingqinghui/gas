@@ -23,48 +23,49 @@ type ServerAgent struct {
 	network.AgentActor
 }
 
-func (a *ServerAgent) Data(message *common.ClientMessage, respond *common.ClientMessage) error {
-	respond.Content = "1111111111111111"
+func (a *ServerAgent) Login(session *api.Session, message *common.ClientMessage) *api.Error {
 	a.Ctx.Info("agent receive message", zap.Any("message", message))
-	// 外部消息分发
-	switch message.Name {
-	case "Login":
-		return a.Login(message)
-	}
-	return nil
-}
 
-func (a *ServerAgent) Login(request *common.ClientMessage) error {
-	// todo 登录验证
-	pid := api.NewPidWithName("ChatService")
-	msg := &common.RpcRoomJoin{
-		UserId: 1, // fake
+	chatPid := a.Ctx.Node().Cluster().NewPid("chat", balancer.NewRandom(), nil)
+	if chatPid == nil {
+		return api.ErrPidIsNil
 	}
-	// rpc
-	if err := a.Ctx.Send(pid, "Join", msg); err != nil {
+	// async inner
+	if err := a.Ctx.Send(chatPid, "Join", &common.RpcRoomJoin{UserId: 10}); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (a *ServerAgent) JoinSuccess(message *common.ClientMessage) error {
-	a.Ctx.Info("JoinSuccess")
-	return nil
-}
-
-func HandshakeAuthFunc(session api.ISession, data []byte) ([]byte, error) {
-	m := common.UnmarshalHandshakeMessage(data)
-	session.Node().Log().Info("HandshakeFuncAuth", zap.String("version", m.Version))
-	// 验证客户端信息
-	if m.Version == "" {
-		if err := session.Close(errors.New("handshake auth fail")); err != nil {
-			session.Node().Log().Info("HandshakeFuncAuth", zap.Error(err))
-			return nil, err
-		}
-		return nil, errors.New("handshake auth fail")
+	// sync inner
+	reply := new(common.RpcRoomJoin)
+	if err := a.Ctx.Call(chatPid, "SyncJoin1", &common.RpcRoomJoin{UserId: 11}, reply); err != nil {
+		return err
 	}
 
+	// network message
+	msg := a.Ctx.Message()
+	msg.To = chatPid
+	msg.MethodName = "Chat"
+	if err := a.Ctx.System().PostMessage(chatPid, msg); err != nil {
+		return err
+	}
+	// respond to client
+	return a.Ctx.Response(session, message)
+}
+
+func HandshakeAuthFunc(entity api.INetEntity, data []byte) ([]byte, *api.Error) {
+	m := common.UnmarshalHandshakeMessage(data)
+	if m == nil {
+		return nil, nil
+	}
+	entity.Node().Log().Info("HandshakeFuncAuth", zap.String("version", m.Version))
+	// 验证客户端信息
+	if m.Version == "" {
+		if err := entity.Close(errors.New("handshake auth fail")); err != nil {
+			entity.Node().Log().Info("HandshakeFuncAuth", zap.Error(err))
+			return nil, err
+		}
+		return nil, api.Ok
+	}
 	m.ServerTime = time.Now().Unix()
 	return common.MarshalHandshakeMessage(m), nil
 }
@@ -72,11 +73,14 @@ func HandshakeAuthFunc(session api.ISession, data []byte) ([]byte, error) {
 func RunGateNode(path string) {
 	gateNode := node.New(path)
 
-	gateNode.Cluster().SetLB("ChatService", balancer.NewRandom())
 	producer := func() api.IActor { return new(ServerAgent) }
 
-	router := network.NewRouter()
-	router.Register(1, "Data")
+	router := network.NewRouters()
+	router.Add(1, &network.Router{
+		NodeType: "gate",
+		ActorId:  0,
+		Method:   "Login",
+	})
 	addrArray := gateNode.GetViper().GetStringSlice("network")
 	for _, addr := range addrArray {
 		netModule := network.NewListener(gateNode, addr,

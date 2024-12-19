@@ -8,15 +8,17 @@
 
 package api
 
-import "github.com/duke-git/lancet/v2/convertor"
+import (
+	"fmt"
+)
 
 type Pid struct {
-	NodeId string
+	NodeId uint64
 	UniqId uint64
 	Name   string
 }
 
-func (p *Pid) GetNodeId() string {
+func (p *Pid) GetNodeId() uint64 {
 	return p.NodeId
 }
 func (p *Pid) GetUniqId() uint64 {
@@ -26,12 +28,12 @@ func (p *Pid) String() string {
 	if p == nil {
 		return ""
 	}
-	return p.NodeId + "." + convertor.ToString(p.UniqId)
+	return fmt.Sprintf("%v.%v", p.NodeId, p.UniqId)
 }
 func (p *Pid) GetName() string {
 	return p.Name
 }
-func NewRemotePid(nodeId string, name string) *Pid {
+func NewRemotePid(nodeId uint64, name string) *Pid {
 	return &Pid{
 		NodeId: nodeId,
 		Name:   name,

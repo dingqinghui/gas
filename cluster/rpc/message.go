@@ -20,6 +20,8 @@ type Message struct {
 	IsSync     bool
 	Timeout    time.Duration
 	Data       []byte
+	Session    *api.Session
+	Mid        uint16
 }
 
 func newMessage(from *api.Pid, to *api.Pid, methodName string, isSync bool, timeout time.Duration) *Message {
