@@ -27,10 +27,7 @@ type (
 	}
 	IRpc interface {
 		IModule
-		//IActorSender
 		SetSerializer(serializer ISerializer)
-		//PostNetMessage(to *Pid, session *Session, methodName string, mid uint16, data []byte) error
-
 		Call(to *Pid, timeout time.Duration, message *ActorMessage) (rsp *RespondMessage)
 		PostMessage(to *Pid, message *ActorMessage) *Error
 	}
@@ -54,12 +51,8 @@ type (
 
 	ICluster interface {
 		IModule
-		//IActorSender
-		SetLB(service string, lb IBalancer)
 		Discovery() IDiscovery
 		Rpc() IRpc
 		NewPid(service string, lb IBalancer, user interface{}) *Pid
-		//Broadcast(from *Pid, service, funcName string, request interface{})
-		//PostRemoteMessage(session *Session, to *Pid, methodName string, mid uint16, data []byte) *Error
 	}
 )

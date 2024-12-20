@@ -14,31 +14,28 @@ import (
 
 type AgentActor struct {
 	api.BuiltinActor
-	Session *api.Session
+	api.INetEntity
 }
 
 func (t *AgentActor) OnInit(ctx api.IActorContext) *api.Error {
 	_ = t.BuiltinActor.OnInit(ctx)
-	t.Session = ctx.InitParams().(*api.Session)
+	t.INetEntity = ctx.InitParams().(api.INetEntity)
 	return nil
 }
 
-// Push
-// @Description: 外部发送调用
-// @receiver t
-// @param session
-// @param data
-// @return *api.Error
-func (t *AgentActor) Push(session *api.Session, data []byte) *api.Error {
-	if session.GetEntity() == nil {
-		session, _ = SessionHub.Get(session.GetSid())
+func (t *AgentActor) Response(session *api.Session, s2c interface{}) *api.Error {
+	return t.PushMid(session.Msg.GetID(), s2c)
+}
+
+func (t *AgentActor) PushMid(mid uint16, s2c interface{}) *api.Error {
+	data, err := t.Ctx.System().Serializer().Marshal(s2c)
+	if err != nil {
+		return api.ErrMarshal
 	}
-	if session == nil {
-		return api.ErrNetworkRespond
-	}
-	entity := session.GetEntity()
-	if entity == nil {
-		return api.ErrNetworkRespond
-	}
-	return entity.SendRawMessage(session.Mid, data)
+	message := api.NewNetworkMessage(mid, data)
+	return t.Push(message)
+}
+
+func (t *AgentActor) Push(message *api.NetworkMessage) *api.Error {
+	return t.SendMessage(message)
 }

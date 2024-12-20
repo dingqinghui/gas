@@ -10,6 +10,7 @@ package network
 
 import (
 	"github.com/dingqinghui/gas/api"
+	"github.com/dingqinghui/gas/zlog"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 )
@@ -39,7 +40,7 @@ type closedState struct {
 func (s *closedState) Exec(packet api.INetPacket) *api.Error {
 	if s.Type() == api.NetListener && packet != nil {
 		if packet.GetTyp() != PacketTypeHandshake {
-			s.Log().Error("net entity fsm exec", zap.Uint64("id", s.ID()),
+			zlog.Error("net entity fsm exec", zap.Uint64("id", s.ID()),
 				zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
 			return api.ErrPacketType
 		}
@@ -57,7 +58,7 @@ func (s *closedState) serverHandshake(packet api.INetPacket) *api.Error {
 	// handshake auth
 	buf, err := s.opts.HandshakeAuth(s, packet.GetData())
 	if !api.IsOk(err) {
-		s.Log().Error("server handshake auth err",
+		zlog.Error("server handshake auth err",
 			zap.Uint64("sessionId", s.ID()), zap.Error(err))
 		return err
 	}
@@ -88,7 +89,7 @@ func (w *waitHandshakeState) Exec(packet api.INetPacket) *api.Error {
 		return nil
 	}
 	if packet.GetTyp() != PacketTypeHandshake {
-		w.Log().Error("net entity fsm exec", zap.Uint64("id", w.ID()),
+		zlog.Error("net entity fsm exec", zap.Uint64("id", w.ID()),
 			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
 		return api.ErrPacketType
 	}
@@ -118,7 +119,7 @@ func (w *waitHandshakeAckState) Exec(packet api.INetPacket) *api.Error {
 		return nil
 	}
 	if packet.GetTyp() != PacketTypeHandshakeAck {
-		w.Log().Error("net entity fsm exec", zap.Uint64("id", w.ID()),
+		zlog.Error("net entity fsm exec", zap.Uint64("id", w.ID()),
 			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
 		return api.ErrPacketType
 	}
@@ -146,7 +147,7 @@ func (s *workingState) Exec(packet api.INetPacket) *api.Error {
 		return nil
 	}
 	if packet.GetTyp() != PacketTypeData && packet.GetTyp() != PacketTypeHeartbeat {
-		s.Log().Error("net entity fsm exec", zap.Uint64("id", s.ID()),
+		zlog.Error("net entity fsm exec", zap.Uint64("id", s.ID()),
 			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
 		return api.ErrPacketType
 	}
@@ -159,7 +160,7 @@ func (s *workingState) processDataPack(packet api.INetPacket) *api.Error {
 	msg := msgCodec.Decode(packet.GetData())
 	router := s.opts.Router.Get(msg.GetID())
 	if router == nil {
-		s.Log().Error("net entity fsm exec", zap.Uint64("id", s.ID()),
+		zlog.Error("net entity fsm exec", zap.Uint64("id", s.ID()),
 			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrNetworkRoute))
 		return api.ErrNetworkRoute
 	}
@@ -167,9 +168,11 @@ func (s *workingState) processDataPack(packet api.INetPacket) *api.Error {
 	if !slices.Contains(s.node.GetTags(), router.GetNodeType()) {
 		to = api.NewPidWithName(router.GetNodeType())
 	}
-	message := api.BuildNetMessage(s.session, router.GetMethod(), msg.GetID(), msg.GetData())
+
+	session := api.NewSession(s.Entity, msg)
+	message := api.BuildNetMessage(session, router.GetMethod())
 	if err := s.node.System().PostMessage(to, message); err != nil {
-		s.Log().Error("net entity fsm exec", zap.Uint64("id", s.ID()),
+		zlog.Error("net entity fsm exec", zap.Uint64("id", s.ID()),
 			zap.Int("typ", int(packet.GetTyp())), zap.Error(err))
 		return err
 	}

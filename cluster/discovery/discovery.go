@@ -11,6 +11,7 @@ package discovery
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/xerror"
+	"github.com/dingqinghui/gas/zlog"
 	"github.com/duke-git/lancet/v2/convertor"
 	"golang.org/x/exp/slices"
 )
@@ -99,6 +100,6 @@ func (d *discovery) Stop() *api.Error {
 	if d.provider != nil {
 		d.provider.Stop()
 	}
-	d.Log().Info("discovery module stop")
+	zlog.Info("discovery module stop")
 	return nil
 }

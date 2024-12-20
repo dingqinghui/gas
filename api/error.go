@@ -68,7 +68,7 @@ var (
 	ErrGNetRaw                = NewErr("gnet raw err", 28)
 	ErrNetworkRespond         = NewErr("network respond err", 29)
 	ErrNatsRespond            = NewErr("nats respond err", 30)
-	ErrActorRouterIsNil       = NewErr("actor router is nil", 30)
+	ErrActorRouterIsNil       = NewErr("actor router is nil", 31)
 )
 
 func IsOk(err *Error) bool {

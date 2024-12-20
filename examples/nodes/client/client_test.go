@@ -13,6 +13,7 @@ import (
 	"github.com/dingqinghui/gas/examples/common"
 	"github.com/dingqinghui/gas/network"
 	"github.com/dingqinghui/gas/node"
+	"github.com/dingqinghui/gas/zlog"
 	"go.uber.org/zap"
 	"testing"
 )
@@ -28,11 +29,11 @@ func (c *ClientAgent) OnInit(ctx api.IActorContext) *api.Error {
 		Name:    "Login",
 		Content: "test chat message",
 	}
-	return c.Ctx.Push(c.Session, 1, c2s)
+	return c.PushMid(1, c2s)
 }
 
 func (c *ClientAgent) Data(session *api.Session, message *common.ClientMessage) *api.Error {
-	c.Ctx.Info("ClientAgent receive message", zap.Any("message", message))
+	zlog.Info("ClientAgent receive message", zap.Any("message", message))
 	return nil
 }
 

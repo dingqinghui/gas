@@ -11,7 +11,6 @@ package actor
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/mpsc"
-	"go.uber.org/zap"
 	"runtime"
 	"sync/atomic"
 )
@@ -61,7 +60,6 @@ func (m *mailbox) schedule() *api.Error {
 		return nil
 	}
 	if err := m.dispatch.Schedule(m.node, m.process, func(err interface{}) {
-		m.node.Log().Error("mailbox panic", zap.Stack("stack"), zap.Error(err.(error)))
 		//_ = m.invoker.InvokerMessage(NewMailBoxMessage(PanicFuncName, nil, err))
 	}); err != nil {
 		return err

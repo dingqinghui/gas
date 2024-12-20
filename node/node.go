@@ -42,7 +42,6 @@ type Node struct {
 	api.BuiltinModule
 	*api.BaseNode
 	configPath  string
-	logger      api.IZLogger
 	actorSystem api.IActorSystem
 	viper       *viper.Viper
 	cluster     api.ICluster
@@ -63,7 +62,7 @@ func (a *Node) Init() {
 	a.initActorSystem()
 	// init cluster
 	a.initCluster()
-	a.Log().Info("node init finish............")
+	zlog.Info("node init finish............")
 }
 
 func (a *Node) initViper() {
@@ -91,25 +90,22 @@ func (a *Node) initBaseNode() {
 }
 
 func (a *Node) initLogger() {
-	a.logger = zlog.New(a)
-	a.AddModule(a.logger)
+	zlog.Init(a)
 }
 
 func (a *Node) initActorSystem() {
 	a.actorSystem = actor.NewSystem(a)
-	a.AddModule(a.actorSystem)
 }
 
 func (a *Node) initCluster() {
 	a.cluster = cluster.New(a)
-	a.AddModule(a.cluster)
 }
 
 func (a *Node) Run() {
 	for _, module := range a.modules {
 		module.Run()
 	}
-	a.Log().Info("node running............")
+	zlog.Info("node running............")
 }
 
 func (a *Node) Base() api.INodeBase {
@@ -128,9 +124,6 @@ func (a *Node) AddModule(modules ...api.IModule) {
 	a.modules = append(a.modules, modules...)
 }
 
-func (a *Node) Log() api.IZLogger {
-	return a.logger
-}
 func (a *Node) Cluster() api.ICluster {
 	return a.cluster
 }
@@ -159,7 +152,7 @@ func (a *Node) NextId() int64 {
 	}
 	id, err := a.idWorker.NextId()
 	if err != nil {
-		a.Log().Error("nextId", zap.Error(err))
+		zlog.Error("nextId", zap.Error(err))
 	}
 	return id
 }
@@ -178,5 +171,5 @@ func (a *Node) terminate(reason string) {
 			module.Stop()
 		}
 	}
-	a.Log().Info("node terminate", zap.String("reason", reason))
+	zlog.Info("node terminate", zap.String("reason", reason))
 }

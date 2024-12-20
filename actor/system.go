@@ -11,7 +11,9 @@ package actor
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/asynctime"
+	"github.com/dingqinghui/gas/extend/reflectx"
 	"github.com/dingqinghui/gas/extend/serializer"
+	"github.com/dingqinghui/gas/zlog"
 	"github.com/duke-git/lancet/v2/maputil"
 	"go.uber.org/zap"
 	"sync/atomic"
@@ -23,28 +25,42 @@ type System struct {
 	uniqId      atomic.Uint64
 	nameDict    *maputil.ConcurrentMap[string, *api.Pid]
 	processDict *maputil.ConcurrentMap[uint64, api.IProcess]
-	routerHub   api.IActorRouterHub
 	timeout     time.Duration
 	serializer  api.ISerializer
+	routerDict  *maputil.ConcurrentMap[string, api.IActorRouter]
 }
 
 func NewSystem(node api.INode) api.IActorSystem {
 	s := new(System)
-	s.timeout = time.Second * 1
-	s.serializer = serializer.Json
 	s.SetNode(node)
 	s.Init()
+	node.AddModule(s)
 	return s
 }
 
 func (s *System) Init() {
 	s.nameDict = maputil.NewConcurrentMap[string, *api.Pid](10)
 	s.processDict = maputil.NewConcurrentMap[uint64, api.IProcess](10)
-	s.routerHub = NewRouterHub()
+	s.routerDict = maputil.NewConcurrentMap[string, api.IActorRouter](10)
+	s.timeout = time.Second * 1
+	s.serializer = serializer.Json
 }
 
 func (s *System) Name() string {
 	return "actorSystem"
+}
+
+func (s *System) SetRouter(name string, router api.IActorRouter) {
+	s.routerDict.Set(name, router)
+}
+
+func (s *System) GetOrSetRouter(actor api.IActor) api.IActorRouter {
+	name := reflectx.TypeFullName(actor)
+	v, ok := s.routerDict.Get(name)
+	if !ok {
+		v, ok = s.routerDict.GetOrSet(name, NewRouter(name, actor))
+	}
+	return v
 }
 
 func (s *System) Timeout() time.Duration {
@@ -160,7 +176,7 @@ func (s *System) Call(from, to *api.Pid, funcName string, request, reply interfa
 	}
 	requestData, e := s.Serializer().Marshal(request)
 	if e != nil {
-		s.Log().Error("system call", zap.Error(api.ErrJsonPack))
+		zlog.Error("system call", zap.Error(api.ErrJsonPack))
 		return api.ErrJsonPack
 	}
 	message := api.BuildInnerMessage(from, to, funcName, requestData)
@@ -182,7 +198,7 @@ func (s *System) Call(from, to *api.Pid, funcName string, request, reply interfa
 		return rsp.Err
 	}
 	if err := s.unmarshalRsp(rsp, reply); err != nil {
-		s.Log().Error("system call", zap.Error(err))
+		zlog.Error("system call", zap.Error(err))
 		return err
 	}
 	return nil
@@ -214,7 +230,7 @@ func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...a
 	mb := getMailBox(s.Node(), opt)
 
 	actor := producer()
-	r := s.routerHub.GetOrSet(actor)
+	r := s.GetOrSetRouter(actor)
 
 	context := NewBaseActorContext()
 	context.actor = actor
@@ -222,7 +238,6 @@ func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...a
 	context.router = r
 	context.pid = s.NextPid()
 	context.initParams = params
-	context.IZLogger = s.Log()
 
 	process := NewBaseProcess(context, mb)
 	context.process = process
@@ -234,10 +249,6 @@ func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...a
 		return nil, err
 	}
 	return process, nil
-}
-
-func (s *System) RouterHub() api.IActorRouterHub {
-	return s.routerHub
 }
 
 func (s *System) AddTimer(pid *api.Pid, d time.Duration, funcName string) *api.Error {
@@ -282,6 +293,6 @@ func (s *System) Stop() *api.Error {
 	})
 	s.nameDict = maputil.NewConcurrentMap[string, *api.Pid](10)
 	s.processDict = maputil.NewConcurrentMap[uint64, api.IProcess](10)
-	s.Log().Info("actor system stop")
+	zlog.Info("actor system stop")
 	return nil
 }

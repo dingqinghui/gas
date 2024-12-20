@@ -13,6 +13,7 @@ import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/netx"
 	"github.com/dingqinghui/gas/extend/xerror"
+	"github.com/dingqinghui/gas/zlog"
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/panjf2000/gnet/v2"
 	"go.uber.org/zap"
@@ -64,7 +65,7 @@ func (b *udpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 		b.Link(entity, c)
 	}
 	if err := entity.Traffic(c); err != nil {
-		b.Log().Error("udp server traffic err",
+		zlog.Error("udp server traffic err",
 			zap.String("remote", entity.RemoteAddr()), zap.Error(err))
 		return gnet.Close
 	}
@@ -120,7 +121,7 @@ func (b *tcpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 	var err error
 	entity := b.Ref(c)
 	if entity == nil {
-		b.Log().Warn("tcp server traffic err", zap.Error(api.ErrNetEntityIsNil))
+		zlog.Warn("tcp server traffic err", zap.Error(api.ErrNetEntityIsNil))
 		return gnet.Close
 	}
 	if err = entity.Traffic(c); err != nil {
@@ -134,12 +135,12 @@ func (b *tcpServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 func (b *tcpServer) OnClose(c gnet.Conn, err error) (action gnet.Action) {
 	entity := b.Ref(c)
 	if entity == nil {
-		b.Log().Warn("tcp server onclose err",
+		zlog.Warn("tcp server onclose err",
 			zap.Error(api.ErrNetEntityIsNil))
 		return
 	}
 	if err = entity.Closed(err); err != nil {
-		b.Log().Error("tcp server onclose err",
+		zlog.Error("tcp server onclose err",
 			zap.String("remote", entity.RemoteAddr()),
 			zap.Error(err))
 		return 0

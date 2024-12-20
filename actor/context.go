@@ -11,11 +11,11 @@ package actor
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/reflectx"
+	"github.com/dingqinghui/gas/zlog"
 	"go.uber.org/zap"
 )
 
 type baseActorContext struct {
-	api.IZLogger
 	actor      api.IActor
 	process    api.IProcess
 	system     api.IActorSystem
@@ -35,7 +35,7 @@ func NewBaseActorContext() *baseActorContext {
 func (a *baseActorContext) InvokerMessage(msg interface{}) *api.Error {
 	a.mbm = msg.(*api.ActorMessage)
 	if err := a.invokerMessage(a.mbm); err != nil {
-		a.Error("actor invoker message err",
+		zlog.Error("actor处理消息失败",
 			zap.String("name", reflectx.TypeFullName(a.Actor())),
 			zap.String("method", a.mbm.MethodName),
 			zap.Error(err))
@@ -65,7 +65,6 @@ func (a *baseActorContext) invokerNetMessage(msg *api.ActorMessage) *api.Error {
 	if md == nil {
 		return api.ErrActorNotMethod
 	}
-	msg.Session.Mid = msg.Mid
 	method := &networkMethod{md}
 	return method.call(a, msg)
 }
@@ -83,8 +82,7 @@ func (a *baseActorContext) invokerInnerMessage(msg *api.ActorMessage) *api.Error
 	if !api.IsOk(rsq.Err) {
 		return rsq.Err
 	}
-	msg.Respond(rsq)
-	return nil
+	return msg.Respond(rsq)
 }
 
 func (a *baseActorContext) Message() *api.ActorMessage {
@@ -132,7 +130,7 @@ func (a *baseActorContext) Call(to *api.Pid, funcName string, request, reply int
 }
 
 func (a *baseActorContext) Response(session *api.Session, s2c interface{}) *api.Error {
-	return a.Push(session, session.Mid, s2c)
+	return a.Push(session, session.Msg.GetID(), s2c)
 }
 
 func (a *baseActorContext) Push(session *api.Session, mid uint16, s2c interface{}) *api.Error {
@@ -148,11 +146,15 @@ func (a *baseActorContext) Push(session *api.Session, mid uint16, s2c interface{
 		if entity == nil {
 			return api.ErrNetworkRespond
 		}
-		return entity.SendRawMessage(mid, data)
+		message := api.NewNetworkMessage(mid, data)
+		return entity.SendMessage(message)
 	} else {
-		message := api.BuildNetMessage(session, "Push", mid, data)
-		message.To = session.Agent
-		message.From = a.Self()
+		netMessage := api.NewNetworkMessage(mid, data)
+		mData, wrong := a.System().Serializer().Marshal(netMessage)
+		if wrong != nil {
+			return api.ErrMarshal
+		}
+		message := api.BuildInnerMessage(a.Self(), session.Agent, "Push", mData)
 		return a.System().PostMessage(session.Agent, message)
 	}
 }

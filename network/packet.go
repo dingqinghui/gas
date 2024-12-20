@@ -27,16 +27,16 @@ var (
 	HandshakeAckPacket = NewPacket(PacketTypeHandshakeAck, nil)
 )
 
-func NewHandshakePacket(buf []byte) *api.BuiltinNetworkPacket {
+func NewHandshakePacket(buf []byte) *api.NetworkPacket {
 	return NewPacket(PacketTypeHandshake, buf)
 }
 
-func NewDataPacket(data []byte) *api.BuiltinNetworkPacket {
-	return &api.BuiltinNetworkPacket{Type: PacketTypeData, Data: data}
+func NewDataPacket(data []byte) *api.NetworkPacket {
+	return &api.NetworkPacket{Type: PacketTypeData, Data: data}
 }
 
-func NewPacket(tye api.NetPacketType, data []byte) *api.BuiltinNetworkPacket {
-	return &api.BuiltinNetworkPacket{Type: tye, Data: data}
+func NewPacket(tye api.NetPacketType, data []byte) *api.NetworkPacket {
+	return &api.NetworkPacket{Type: tye, Data: data}
 }
 
 const (
@@ -57,11 +57,11 @@ func (codec *BuiltinPacketCodec) Encode(packet api.INetPacket) []byte {
 	return buf
 }
 
-func (codec *BuiltinPacketCodec) Decode(reader gnet.Reader) []*api.BuiltinNetworkPacket {
+func (codec *BuiltinPacketCodec) Decode(reader gnet.Reader) []*api.NetworkPacket {
 	if reader == nil {
 		return nil
 	}
-	var packets []*api.BuiltinNetworkPacket
+	var packets []*api.NetworkPacket
 	for {
 		buf, _ := reader.Peek(HeadLength)
 		if len(buf) < HeadLength {
@@ -81,7 +81,7 @@ func (codec *BuiltinPacketCodec) Decode(reader gnet.Reader) []*api.BuiltinNetwor
 			return nil
 		}
 		_, _ = reader.Discard(msgLen)
-		p := new(api.BuiltinNetworkPacket)
+		p := new(api.NetworkPacket)
 		p.Type = api.NetPacketType(typ)
 		p.Data = buf[HeadLength:msgLen]
 		packets = append(packets, p)

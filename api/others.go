@@ -43,7 +43,6 @@ type (
 		Name() string
 		SetNode(node INode)
 		Node() INode
-		Log() IZLogger
 	}
 
 	IModuleLifecycle interface {
@@ -73,4 +72,3 @@ func (b *BuiltinModule) Run()               {}
 func (b *BuiltinModule) Name() string       { return "" }
 func (b *BuiltinModule) SetNode(node INode) { b.node = node }
 func (b *BuiltinModule) Node() INode        { return b.node }
-func (b *BuiltinModule) Log() IZLogger      { return b.node.Log() }

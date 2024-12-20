@@ -12,6 +12,7 @@ import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/examples/common"
 	"github.com/dingqinghui/gas/node"
+	"github.com/dingqinghui/gas/zlog"
 	"go.uber.org/zap"
 )
 
@@ -33,20 +34,20 @@ func (c *Service) OnInit(ctx api.IActorContext) *api.Error {
 
 // async handler
 func (c *Service) Join(message *common.RpcRoomJoin) *api.Error {
-	c.Ctx.Info("ChatService Join", zap.Any("message", message), zap.Any("message", c.Ctx.Message().From))
+	zlog.Info("ChatService Join", zap.Any("message", message), zap.Any("message", c.Ctx.Message().From))
 	c.dict[message.UserId] = c.Ctx.Message().From
 	return nil
 }
 
 // sync handler
 func (c *Service) SyncJoin1(request *common.RpcRoomJoin) (*common.RpcRoomJoin, *api.Error) {
-	c.Ctx.Info("ChatService SyncJoin1", zap.Any("message", request), zap.Any("message", c.Ctx.Message().From))
+	zlog.Info("ChatService SyncJoin1", zap.Any("message", request), zap.Any("message", c.Ctx.Message().From))
 	return &common.RpcRoomJoin{UserId: 12}, api.Ok
 }
 
 // network handler
 func (c *Service) Chat(session *api.Session, message *common.ClientMessage) *api.Error {
-	c.Ctx.Info("ChatService Chat", zap.Any("message", message), zap.Any("message", c.Ctx.Message().From))
+	zlog.Info("ChatService Chat", zap.Any("message", message), zap.Any("message", c.Ctx.Message().From))
 	message.Content = "111111111111111"
 	// push to client
 	if err := c.Ctx.Push(session, 2, message); err != nil {
@@ -58,11 +59,6 @@ func (c *Service) Chat(session *api.Session, message *common.ClientMessage) *api
 	}
 	return nil
 }
-
-//func (c *Service) Chat(ctx api.IActorContext, message *common.ClientMessage) error {
-//	ctx.System().Log().Info("ChatService chat", zap.Any("message", message))
-//	return nil
-//}
 
 func RunChatNode(path string) {
 	chatNode := node.New(path)

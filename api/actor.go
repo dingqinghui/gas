@@ -28,7 +28,6 @@ type (
 		Throughput() int
 	}
 	IActorContext interface {
-		IZLogger
 		Message() *ActorMessage
 		Process() IProcess
 		System() IActorSystem
@@ -60,29 +59,24 @@ type (
 
 	IActorSystem interface {
 		IModule
-
 		Spawn(producer ActorProducer, params interface{}, opts ...ProcessOption) (*Pid, *Error)
 		SpawnWithName(name string, producer ActorProducer, params interface{}, opts ...ProcessOption) (*Pid, *Error)
 		NextPid() *Pid
 		Kill(pid *Pid) *Error
-		RouterHub() IActorRouterHub
 		AddTimer(pid *Pid, d time.Duration, funcName string) *Error
 		Find(pid *Pid) IProcess
-		Timeout() time.Duration
 		RegisterName(name string, pid *Pid) *Error
 		UnregisterName(name string) (*Pid, *Error)
 		PostMessage(to *Pid, message *ActorMessage) *Error
 		Send(from, to *Pid, funcName string, request interface{}) *Error
 		Call(from, to *Pid, funcName string, request, reply interface{}) *Error
+		Timeout() time.Duration
 		SetTimeout(timeout time.Duration)
-		SetSerializer(serializer ISerializer)
 		Serializer() ISerializer
+		SetSerializer(serializer ISerializer)
 		IsLocalPid(pid *Pid) bool
-	}
-
-	IActorRouterHub interface {
-		Set(name string, router IActorRouter)
-		GetOrSet(actor IActor) IActorRouter
+		SetRouter(name string, router IActorRouter)
+		GetOrSetRouter(actor IActor) IActorRouter
 	}
 
 	IActorRouter interface {
@@ -143,27 +137,25 @@ type ActorMessage struct {
 	From       *Pid
 	To         *Pid
 	Data       []byte
-	Mid        uint16
 	Session    *Session
 	respond    RespondFun
 }
 
-func (m *ActorMessage) Respond(rsp *RespondMessage) {
+func (m *ActorMessage) Respond(rsp *RespondMessage) *Error {
 	if m.respond == nil {
-		return
+		return nil
 	}
-	m.respond(rsp)
+	return m.respond(rsp)
 }
+
 func (m *ActorMessage) SetRespond(respond RespondFun) {
 	m.respond = respond
 }
 
-func BuildNetMessage(session *Session, methodName string, mid uint16, data []byte) *ActorMessage {
+func BuildNetMessage(session *Session, methodName string) *ActorMessage {
 	return &ActorMessage{
 		Typ:        ActorNetMessage,
 		MethodName: methodName,
-		Data:       data,
-		Mid:        mid,
 		Session:    session,
 	}
 }

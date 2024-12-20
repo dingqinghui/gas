@@ -11,37 +11,13 @@ package actor
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/reflectx"
-	"github.com/duke-git/lancet/v2/maputil"
 	"reflect"
 )
 
-const fixedInnerArgNum = 2
+const fixedInnerArgNum = 1
 const fixedNetworkArgNum = 3
 
 var typeOfBytes = reflect.TypeOf(([]byte)(nil))
-
-func NewRouterHub() api.IActorRouterHub {
-	r := new(RouterHub)
-	r.dict = maputil.NewConcurrentMap[string, api.IActorRouter](10)
-	return r
-}
-
-type RouterHub struct {
-	dict *maputil.ConcurrentMap[string, api.IActorRouter]
-}
-
-func (r *RouterHub) Set(name string, router api.IActorRouter) {
-	r.dict.Set(name, router)
-}
-
-func (r *RouterHub) GetOrSet(actor api.IActor) api.IActorRouter {
-	name := reflectx.TypeFullName(actor)
-	v, ok := r.dict.Get(name)
-	if !ok {
-		v, ok = r.dict.GetOrSet(name, NewRouter(name, actor))
-	}
-	return v
-}
 
 func NewRouter(name string, actor api.IActor) *Router {
 	r := new(Router)
@@ -64,31 +40,24 @@ func (h *Router) Set(name string, method *reflectx.Method) {
 	h.dict[name] = method
 }
 
+func newArg(argType reflect.Type, serializer api.ISerializer, data []byte) (arg any, err *api.Error) {
+	if argType == typeOfBytes {
+		arg = data
+		return
+	}
+	arg = reflectx.NewByType(argType)
+	if data == nil {
+		return
+	}
+	if e := serializer.Unmarshal(data, arg); e != nil {
+		err = api.ErrUnmarshal
+		return
+	}
+	return
+}
+
 type networkMethod struct {
 	*reflectx.Method
-}
-
-func (m *networkMethod) NewRequest(ctx api.IActorContext, data []byte) (interface{}, *api.Error) {
-	if m.IsRawRequest() {
-		return data, nil
-	} else {
-		request := reflectx.NewByType(m.GetRequestType())
-		if data == nil {
-			return nil, nil
-		}
-		if err := ctx.System().Serializer().Unmarshal(data, request); err != nil {
-			return nil, api.ErrJsonUnPack
-		}
-		return request, nil
-	}
-}
-
-func (m *networkMethod) IsRawRequest() bool {
-	return m.GetRequestType() == typeOfBytes
-}
-
-func (m *networkMethod) GetRequestType() reflect.Type {
-	return m.ArgTypes[2]
 }
 
 func (m *networkMethod) call(ctx api.IActorContext, msg *api.ActorMessage) *api.Error {
@@ -98,7 +67,7 @@ func (m *networkMethod) call(ctx api.IActorContext, msg *api.ActorMessage) *api.
 	argValues := make([]reflect.Value, fixedNetworkArgNum, fixedNetworkArgNum)
 	argValues[0] = reflect.ValueOf(ctx.Actor())
 	argValues[1] = reflect.ValueOf(msg.Session)
-	request, err := m.NewRequest(ctx, msg.Data)
+	request, err := newArg(m.ArgTypes[2], ctx.System().Serializer(), msg.Data)
 	if err != nil {
 		return err
 	}
@@ -118,44 +87,22 @@ type innerMethod struct {
 	*reflectx.Method
 }
 
-func (m *innerMethod) NewRequest(ctx api.IActorContext, data []byte) (interface{}, *api.Error) {
-	if m.IsRawRequest() {
-		return data, nil
-	} else {
-		request := reflectx.NewByType(m.GetRequestType())
-		if data == nil {
-			return nil, nil
-		}
-		if err := ctx.System().Serializer().Unmarshal(data, request); err != nil {
-			return nil, api.ErrJsonUnPack
-		}
-		return request, nil
-	}
-}
-
-func (m *innerMethod) IsRawRequest() bool {
-	return m.GetRequestType() == typeOfBytes
-}
-
-func (m *innerMethod) GetRequestType() reflect.Type {
-	return m.ArgTypes[1]
-}
-
 func (m *innerMethod) call(ctx api.IActorContext, msg *api.ActorMessage) (rsp *api.RespondMessage) {
 	rsp = new(api.RespondMessage)
-	if m.ArgNum != fixedInnerArgNum {
+	if m.ArgNum < fixedInnerArgNum {
 		rsp.Err = api.ErrActorArgsNum
 		return
 	}
 	argValues := make([]reflect.Value, m.ArgNum, m.ArgNum)
 	argValues[0] = reflect.ValueOf(ctx.Actor())
-
-	request, err := m.NewRequest(ctx, msg.Data)
-	if err != nil {
-		rsp.Err = err
-		return
+	if m.ArgNum >= fixedInnerArgNum+1 {
+		request, err := newArg(m.ArgTypes[1], ctx.System().Serializer(), msg.Data)
+		if err != nil {
+			rsp.Err = err
+			return
+		}
+		argValues[1] = reflect.ValueOf(request)
 	}
-	argValues[1] = reflect.ValueOf(request)
 	values := m.Fun.Call(argValues)
 	m.returnValues(ctx, values, rsp)
 	return
@@ -183,15 +130,11 @@ func (m *innerMethod) returnValues(ctx api.IActorContext, values []reflect.Value
 				rsp.Data = buf
 			}
 		}
-		if !values[0].IsNil() {
+		if !values[1].IsNil() {
 			errInter := values[1].Interface()
 			if errInter != nil {
 				rsp.Err = errInter.(*api.Error)
 			}
 		}
 	}
-}
-
-func (m *innerMethod) HasReply() bool {
-	return m.ArgNum >= fixedInnerArgNum+1
 }

@@ -1,0 +1,46 @@
+{"L":"info","T":"2024/12/20 16:16:35.103492+0800","C":"nats/conn.go:50","M":"nats connect","nodeId":"0","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/20 16:16:35.122246+0800","C":"consul/provider.go:55","M":"consul connect success..","nodeId":"0","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/20 16:16:35.122246+0800","C":"node/node.go:65","M":"node init finish............","nodeId":"0"}
+{"L":"info","T":"2024/12/20 16:16:35.156144+0800","C":"consul/provider.go:68","M":"consul watch begin","nodeId":"0","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/20 16:16:35.207449+0800","C":"consul/provider.go:129","M":"consul node  register ","nodeId":"0","nodeId":0,"nodeName":"clusterName","address":"","port":0,"tags":["client"]}
+{"L":"info","T":"2024/12/20 16:16:35.207449+0800","C":"consul/provider.go:136","M":"consul health check begin","nodeId":"0"}
+{"L":"info","T":"2024/12/20 16:16:35.207956+0800","C":"rpc/rpc.go:49","M":"rpc subscribe","nodeId":"0","topic":"node.0"}
+{"L":"info","T":"2024/12/20 16:16:35.207956+0800","C":"node/node.go:108","M":"node running............","nodeId":"0"}
+{"L":"info","T":"2024/12/20 16:18:38.800141+0800","C":"nats/conn.go:50","M":"nats connect","nodeId":"0","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/20 16:18:38.833869+0800","C":"consul/provider.go:55","M":"consul connect success..","nodeId":"0","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/20 16:18:38.833869+0800","C":"node/node.go:65","M":"node init finish............","nodeId":"0"}
+{"L":"info","T":"2024/12/20 16:18:38.851638+0800","C":"consul/provider.go:68","M":"consul watch begin","nodeId":"0","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/20 16:18:38.898580+0800","C":"consul/provider.go:129","M":"consul node  register ","nodeId":"0","nodeId":0,"nodeName":"clusterName","address":"","port":0,"tags":["client"]}
+{"L":"info","T":"2024/12/20 16:18:38.898580+0800","C":"consul/provider.go:136","M":"consul health check begin","nodeId":"0"}
+{"L":"info","T":"2024/12/20 16:18:38.898580+0800","C":"rpc/rpc.go:49","M":"rpc subscribe","nodeId":"0","topic":"node.0"}
+{"L":"info","T":"2024/12/20 16:18:38.899099+0800","C":"node/node.go:108","M":"node running............","nodeId":"0"}
+{"L":"debug","T":"2024/12/20 16:18:38.900138+0800","C":"network/entity.go:151","M":"entity send packet","nodeId":"0","entityId":1,"packet":"NetPacketType: 1,  Data: {\"Version\":\"1.1.1\",\"EncryptSeed\":0,\"ServerTime\":0}"}
+{"L":"info","T":"2024/12/20 16:18:38.900138+0800","C":"network/entity.go:98","M":"entity fsm change state","nodeId":"0","entityId":1,"fsmName":"waitHandshakeState"}
+{"L":"debug","T":"2024/12/20 16:18:38.900138+0800","C":"network/entity.go:103","M":"entity exec packet","nodeId":"0","entityId":1,"packet":null}
+{"L":"info","T":"2024/12/20 16:18:38.900138+0800","C":"network/entity.go:49","M":"new entity","nodeId":"0","entityId":1,"typ":2,"network":"udp","remoteAddr":"127.0.0.1:8454","localAddr":"127.0.0.1:58304"}
+{"L":"debug","T":"2024/12/20 16:18:38.901209+0800","C":"network/entity.go:151","M":"entity send packet","nodeId":"0","entityId":1,"packet":"NetPacketType: 2,  Data: "}
+{"L":"error","T":"2024/12/20 16:18:38.901730+0800","C":"network/entity.go:141","M":"entity send packet err","nodeId":"0","entityId":1,"error":"write udp 127.0.0.1:58304->127.0.0.1:8454: use of closed network connection"}
+{"L":"info","T":"2024/12/20 16:19:12.881905+0800","C":"nats/conn.go:50","M":"nats connect","nodeId":"0","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/20 16:19:12.902939+0800","C":"consul/provider.go:55","M":"consul connect success..","nodeId":"0","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/20 16:19:12.902939+0800","C":"node/node.go:65","M":"node init finish............","nodeId":"0"}
+{"L":"info","T":"2024/12/20 16:19:12.906622+0800","C":"consul/provider.go:68","M":"consul watch begin","nodeId":"0","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/20 16:19:12.964985+0800","C":"consul/provider.go:129","M":"consul node  register ","nodeId":"0","nodeId":0,"nodeName":"clusterName","address":"","port":0,"tags":["client"]}
+{"L":"info","T":"2024/12/20 16:19:12.964985+0800","C":"consul/provider.go:136","M":"consul health check begin","nodeId":"0"}
+{"L":"info","T":"2024/12/20 16:19:12.965491+0800","C":"rpc/rpc.go:49","M":"rpc subscribe","nodeId":"0","topic":"node.0"}
+{"L":"info","T":"2024/12/20 16:19:12.965491+0800","C":"node/node.go:108","M":"node running............","nodeId":"0"}
+{"L":"debug","T":"2024/12/20 16:19:12.966692+0800","C":"network/entity.go:150","M":"entity send packet","nodeId":"0","entityId":1,"packet":"NetPacketType: 1,  Data: {\"Version\":\"1.1.1\",\"EncryptSeed\":0,\"ServerTime\":0}"}
+{"L":"info","T":"2024/12/20 16:19:12.966706+0800","C":"network/entity.go:98","M":"entity fsm change state","nodeId":"0","entityId":1,"fsmName":"waitHandshakeState"}
+{"L":"debug","T":"2024/12/20 16:19:12.966706+0800","C":"network/entity.go:103","M":"entity exec packet","nodeId":"0","entityId":1,"packet":null}
+{"L":"info","T":"2024/12/20 16:19:12.966706+0800","C":"network/entity.go:49","M":"new entity","nodeId":"0","entityId":1,"typ":2,"network":"udp","remoteAddr":"127.0.0.1:8454","localAddr":"127.0.0.1:60660"}
+{"L":"debug","T":"2024/12/20 16:19:12.967743+0800","C":"network/entity.go:150","M":"entity send packet","nodeId":"0","entityId":1,"packet":"NetPacketType: 2,  Data: "}
+{"L":"info","T":"2024/12/20 16:19:12.968777+0800","C":"network/entity.go:123","M":"entity spawn agent","nodeId":"0","entityId":1,"agent":"0.1"}
+{"L":"info","T":"2024/12/20 16:19:12.968777+0800","C":"network/entity.go:98","M":"entity fsm change state","nodeId":"0","entityId":1,"fsmName":"workingState"}
+{"L":"debug","T":"2024/12/20 16:19:12.968777+0800","C":"network/entity.go:103","M":"entity exec packet","nodeId":"0","entityId":1,"packet":"NetPacketType: 1,  Data: {\"Version\":\"1.1.1\",\"EncryptSeed\":0,\"ServerTime\":1734682752}"}
+{"L":"debug","T":"2024/12/20 16:19:12.968777+0800","C":"network/entity.go:150","M":"entity send packet","nodeId":"0","entityId":1,"packet":"NetPacketType: 4,  Data: \u0000\u0001{\"Name\":\"Login\",\"Content\":\"test chat message\"}"}
+{"L":"debug","T":"2024/12/20 16:19:12.991292+0800","C":"network/entity.go:103","M":"entity exec packet","nodeId":"0","entityId":1,"packet":"NetPacketType: 4,  Data: \u0000\u0001{\"Name\":\"\",\"Content\":\"\"}"}
+{"L":"info","T":"2024/12/20 16:19:12.991292+0800","C":"client/client_test.go:36","M":"ClientAgent receive message","nodeId":"0","message":{"Name":"","Content":""}}
+{"L":"error","T":"2024/12/20 16:19:12.991809+0800","C":"network/fsm.go:163","M":"net entity fsm exec","nodeId":"0","id":1,"typ":4,"error":"network route err"}
+{"L":"error","T":"2024/12/20 16:19:12.991809+0800","C":"network/entity.go:91","M":"entity exec err","nodeId":"0","entityId":1,"error":"network route err"}
+{"L":"error","T":"2024/12/20 16:19:12.991809+0800","C":"network/server.go:68","M":"udp server traffic err","nodeId":"0","remote":"127.0.0.1:8454","error":"network route err"}
+{"L":"debug","T":"2024/12/20 16:19:12.992323+0800","C":"network/entity.go:103","M":"entity exec packet","nodeId":"0","entityId":1,"packet":"NetPacketType: 4,  Data: \u0000\u0001{\"Name\":\"\",\"Content\":\"111111111111111\"}"}
+{"L":"info","T":"2024/12/20 16:19:12.992323+0800","C":"client/client_test.go:36","M":"ClientAgent receive message","nodeId":"0","message":{"Name":"","Content":""}}

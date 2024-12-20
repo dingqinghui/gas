@@ -60,9 +60,8 @@ type INetEntity interface {
 	LocalAddr() string
 	RemoteAddr() string
 	Traffic(c gnet.Conn) error
-	SendPacket(packet *BuiltinNetworkPacket) *Error
-	SendMessage(msgId uint16, s2c interface{}) *Error
-	SendRawMessage(msgId uint16, data []byte) *Error
+	SendPacket(packet *NetworkPacket) *Error
+	SendMessage(message *NetworkMessage) *Error
 	Close(reason error) *Error
 	Closed(err error) *Error
 	Node() INode
@@ -70,17 +69,32 @@ type INetEntity interface {
 	GetAgent() *Pid
 }
 
-type BuiltinNetworkPacket struct {
+type NetworkPacket struct {
 	Type NetPacketType
 	Data []byte
 }
 
-func (p *BuiltinNetworkPacket) GetTyp() NetPacketType {
+func (p *NetworkPacket) GetTyp() NetPacketType {
 	return p.Type
 }
-func (p *BuiltinNetworkPacket) GetData() []byte {
+func (p *NetworkPacket) GetData() []byte {
 	return p.Data
 }
-func (p *BuiltinNetworkPacket) String() string {
+func (p *NetworkPacket) String() string {
 	return fmt.Sprintf("NetPacketType: %d,  Data: %s", p.Type, string(p.Data))
 }
+
+func NewNetworkMessage(Id uint16, Data []byte) *NetworkMessage {
+	return &NetworkMessage{
+		Id:   Id,
+		Data: Data,
+	}
+}
+
+type NetworkMessage struct {
+	Id   uint16
+	Data []byte
+}
+
+func (m *NetworkMessage) GetID() uint16   { return m.Id }
+func (m *NetworkMessage) GetData() []byte { return m.Data }

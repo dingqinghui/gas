@@ -11,6 +11,7 @@ package workers
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/xerror"
+	"github.com/dingqinghui/gas/zlog"
 	"github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
 	"sync/atomic"
@@ -23,7 +24,6 @@ func New(node api.INode) *workers {
 	w.node = node
 	w.pool = pool
 	return w
-
 }
 
 type workers struct {
@@ -51,7 +51,7 @@ func (w *workers) Try(fn func(), reFun func(err interface{})) {
 			if reFun != nil {
 				reFun(err)
 			}
-			w.node.Log().Error("panic", zap.Error(err.(error)), zap.Stack("stack"))
+			zlog.Error("panic", zap.Error(err.(error)), zap.Stack("stack"))
 		}
 	}()
 	fn()

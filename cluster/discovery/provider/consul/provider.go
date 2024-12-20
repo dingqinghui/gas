@@ -10,6 +10,7 @@ package consul
 
 import (
 	api2 "github.com/dingqinghui/gas/api"
+	"github.com/dingqinghui/gas/zlog"
 	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/hashicorp/consul/api"
 	"go.uber.org/zap"
@@ -37,7 +38,7 @@ func (c *consulProvider) Init() {
 	c.status = "pass"
 
 	if err := c.connect(c.cfg.address); err != nil {
-		c.Log().Panic("consul connect err", zap.Error(err))
+		zlog.Panic("consul connect err", zap.Error(err))
 		return
 	}
 }
@@ -47,11 +48,11 @@ func (c *consulProvider) connect(consulAddress string) error {
 	apiConfig.Address = consulAddress
 	client, err := api.NewClient(apiConfig)
 	if err != nil {
-		c.Log().Error("consul new client err", zap.Error(err))
+		zlog.Error("consul new client err", zap.Error(err))
 		return err
 	}
 	c.client = client
-	c.Log().Info("consul connect success..", zap.String("consulAddress", consulAddress))
+	zlog.Info("consul connect success..", zap.String("consulAddress", consulAddress))
 	return nil
 }
 
@@ -64,13 +65,13 @@ func (c *consulProvider) WatchNode(clusterName string, f api2.EventNodeUpdateHan
 		return err
 	}
 	go func() {
-		c.Log().Info("consul watch begin", zap.String("clusterName", clusterName))
+		zlog.Info("consul watch begin", zap.String("clusterName", clusterName))
 		for !c.IsStop() {
 			if err := c.monitorMemberStatusChanges(clusterName, f); err != nil {
 				return
 			}
 		}
-		c.Log().Info("consul watch end", zap.String("clusterName", clusterName))
+		zlog.Info("consul watch end", zap.String("clusterName", clusterName))
 	}()
 	return nil
 }
@@ -82,7 +83,7 @@ func (c *consulProvider) monitorMemberStatusChanges(clusterName string, f api2.E
 	}
 	services, meta, err := c.client.Health().Service(clusterName, "", true, opt)
 	if err != nil {
-		c.Log().Error("consul discovery agent err", zap.String("clusterName", clusterName), zap.Error(err))
+		zlog.Error("consul discovery agent err", zap.String("clusterName", clusterName), zap.Error(err))
 		return api2.ErrConsul
 	}
 	nodeDict := make(map[string]*api2.BaseNode)
@@ -119,29 +120,29 @@ func (c *consulProvider) AddNode(node api2.INodeBase) *api2.Error {
 		Check:   check,
 	}
 	if err := c.client.Agent().ServiceRegister(registration); err != nil {
-		c.Log().Error("consul node  register err", zap.Uint64("nodeId", node.GetID()), zap.Error(err))
+		zlog.Error("consul node  register err", zap.Uint64("nodeId", node.GetID()), zap.Error(err))
 		return api2.ErrConsul
 	}
 
 	go c.healthCheckActor()
 
-	c.Log().Info("consul node  register ", zap.Uint64("nodeId", node.GetID()),
+	zlog.Info("consul node  register ", zap.Uint64("nodeId", node.GetID()),
 		zap.String("nodeName", node.GetName()), zap.String("address", node.GetAddress()),
 		zap.Int("port", node.GetPort()), zap.Strings("tags", node.GetTags()))
 	return nil
 }
 
 func (c *consulProvider) healthCheckActor() {
-	c.Log().Info("consul health check begin")
+	zlog.Info("consul health check begin")
 	for !c.IsStop() {
 		if err := c.client.Agent().UpdateTTL("service:"+convertor.ToString(c.Node().GetID()), "", c.status); err != nil {
-			c.Node().Log().Error("consul health agent err", zap.Uint64("nodeId", c.Node().GetID()),
+			zlog.Error("consul health agent err", zap.Uint64("nodeId", c.Node().GetID()),
 				zap.String("status", c.status), zap.Error(err))
 			return
 		}
 		time.Sleep(c.cfg.healthTtl / 2)
 	}
-	c.Log().Info("consul health check end")
+	zlog.Info("consul health check end")
 }
 
 func (c *consulProvider) UpdateStatus(status string) {
@@ -150,10 +151,10 @@ func (c *consulProvider) UpdateStatus(status string) {
 
 func (c *consulProvider) RemoveNode(nodeId string) *api2.Error {
 	if err := c.client.Agent().ServiceDeregister(nodeId); err != nil {
-		c.Log().Error("consul service deregister", zap.String("nodeId", nodeId), zap.Error(err))
+		zlog.Error("consul service deregister", zap.String("nodeId", nodeId), zap.Error(err))
 		return api2.ErrConsul
 	}
 
-	c.Log().Info("consul service deregister", zap.String("nodeId", nodeId))
+	zlog.Info("consul service deregister", zap.String("nodeId", nodeId))
 	return nil
 }

@@ -16,13 +16,6 @@ import (
 	"os"
 )
 
-func New(node api.INode) *ZLogger {
-	log := new(ZLogger)
-	log.SetNode(node)
-	log.Init()
-	return log
-}
-
 type ZLogger struct {
 	cfg         *config
 	logger      *zap.Logger
@@ -81,51 +74,60 @@ func (z *ZLogger) Stop() *api.Error {
 	return nil
 }
 
-func (z *ZLogger) Debug(msg string, fields ...zap.Field) {
-	if z.logger == nil {
-		return
-	}
-	z.logger.Debug(msg, fields...)
+var log *ZLogger
+
+func Init(node api.INode) {
+	log = new(ZLogger)
+	log.SetNode(node)
+	log.Init()
+	node.AddModule(log)
 }
 
-func (z *ZLogger) Info(msg string, fields ...zap.Field) {
-	if z.logger == nil {
+func Debug(msg string, fields ...zap.Field) {
+	if log == nil || log.logger == nil {
 		return
 	}
-	z.logger.Info(msg, fields...)
+	log.logger.Debug(msg, fields...)
 }
 
-func (z *ZLogger) Warn(msg string, fields ...zap.Field) {
-	if z.logger == nil {
+func Info(msg string, fields ...zap.Field) {
+	if log == nil || log.logger == nil {
 		return
 	}
-	z.logger.Warn(msg, fields...)
+	log.logger.Info(msg, fields...)
 }
 
-func (z *ZLogger) Error(msg string, fields ...zap.Field) {
-	if z.logger == nil {
+func Warn(msg string, fields ...zap.Field) {
+	if log == nil || log.logger == nil {
 		return
 	}
-	z.logger.Error(msg, fields...)
+	log.logger.Warn(msg, fields...)
 }
 
-func (z *ZLogger) Panic(msg string, fields ...zap.Field) {
-	if z.logger == nil {
+func Error(msg string, fields ...zap.Field) {
+	if log == nil || log.logger == nil {
 		return
 	}
-	z.logger.DPanic(msg, fields...)
+	log.logger.Error(msg, fields...)
 }
 
-func (z *ZLogger) Fatal(msg string, fields ...zap.Field) {
-	if z.logger == nil {
+func Panic(msg string, fields ...zap.Field) {
+	if log == nil || log.logger == nil {
 		return
 	}
-	z.logger.Fatal(msg, fields...)
-}
-func (z *ZLogger) SetLogLevel(logLevel zapcore.Level) {
-	z.loglevel.SetLevel(logLevel)
+	log.logger.DPanic(msg, fields...)
 }
 
-func (z *ZLogger) GetLogLevel() zapcore.Level {
-	return z.loglevel.Level()
+func Fatal(msg string, fields ...zap.Field) {
+	if log == nil || log.logger == nil {
+		return
+	}
+	log.logger.Fatal(msg, fields...)
+}
+func SetLogLevel(logLevel zapcore.Level) {
+	log.loglevel.SetLevel(logLevel)
+}
+
+func GetLevel() zapcore.Level {
+	return log.loglevel.Level()
 }

@@ -29,7 +29,6 @@ type (
 		Wait()
 		GetViper() *viper.Viper
 		System() IActorSystem
-		Log() IZLogger
 		Cluster() ICluster
 		Base() INodeBase
 		Workers() IWorkers

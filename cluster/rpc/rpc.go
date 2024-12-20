@@ -11,6 +11,7 @@ package rpc
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/serializer"
+	"github.com/dingqinghui/gas/zlog"
 	"github.com/duke-git/lancet/v2/convertor"
 	"go.uber.org/zap"
 	"time"
@@ -38,20 +39,20 @@ func (r *Rpc) Run() {
 	r.msgque.Subscribe(topic, func(subj string, data []byte, respondFun api.RpcRespondHandler) {
 		r.Node().Workers().Submit(func() {
 			if err := r.process(data, respondFun); err != nil {
-				r.Log().Error("rpc process", zap.Error(err))
+				zlog.Error("rpc process", zap.Error(err))
 				return
 			}
 
 		}, nil)
 
 	})
-	r.Log().Info("rpc subscribe", zap.String("topic", topic))
+	zlog.Info("rpc subscribe", zap.String("topic", topic))
 }
 
 func (r *Rpc) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
 	buf, err := r.serializer.Marshal(message)
 	if err != nil {
-		r.Log().Error("rpc marshal request err", zap.Error(err))
+		zlog.Error("rpc marshal request err", zap.Error(err))
 		return api.ErrJsonPack
 	}
 	return r.msgque.Send(genTopic(to.GetNodeId()), buf)
@@ -61,19 +62,19 @@ func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.ActorMessage
 	rsp = new(api.RespondMessage)
 	data, err := r.serializer.Marshal(message)
 	if err != nil {
-		r.Log().Error("rpc marshal request err", zap.Error(err))
+		zlog.Error("rpc marshal request err", zap.Error(err))
 		rsp.Err = api.ErrJsonPack
 		return
 	}
 	rspData, err := r.msgque.Call(genTopic(to.GetNodeId()), data, timeout)
 	if err != nil {
-		r.Log().Error("rpc call  err", zap.Error(err))
+		zlog.Error("rpc call  err", zap.Error(err))
 		rsp.Err = api.ErrNatsSend
 		return nil
 	}
 
 	if err = serializer.Json.Unmarshal(rspData, rsp); err != nil {
-		r.Log().Error("system call", zap.Error(err))
+		zlog.Error("system call", zap.Error(err))
 		rsp.Err = api.ErrJsonUnPack
 		return
 	}
@@ -83,7 +84,7 @@ func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.ActorMessage
 func (r *Rpc) process(data []byte, respond api.RpcRespondHandler) *api.Error {
 	message := new(api.ActorMessage)
 	if err := r.serializer.Unmarshal(data, message); err != nil {
-		r.Log().Error("rpc process  err", zap.Error(err))
+		zlog.Error("rpc process  err", zap.Error(err))
 		return api.ErrJsonUnPack
 	}
 	if respond != nil {
@@ -109,7 +110,7 @@ func (r *Rpc) Stop() *api.Error {
 	if err := r.msgque.Stop(); err != nil {
 		return err
 	}
-	r.Log().Info("rpc module stop")
+	zlog.Info("rpc module stop")
 	return nil
 }
 

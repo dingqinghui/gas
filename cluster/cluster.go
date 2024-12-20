@@ -10,19 +10,19 @@ package cluster
 
 import (
 	"github.com/dingqinghui/gas/api"
-	"github.com/dingqinghui/gas/cluster/balancer"
 	"github.com/dingqinghui/gas/cluster/discovery"
 	"github.com/dingqinghui/gas/cluster/discovery/provider/consul"
 	"github.com/dingqinghui/gas/cluster/rpc"
 	"github.com/dingqinghui/gas/cluster/rpc/provider/nats"
 	"github.com/dingqinghui/gas/extend/xerror"
-	"github.com/duke-git/lancet/v2/maputil"
+	"github.com/dingqinghui/gas/zlog"
 )
 
 func New(node api.INode) api.ICluster {
 	c := new(cluster)
 	c.SetNode(node)
 	c.Init()
+	node.AddModule(c)
 	return c
 }
 
@@ -30,7 +30,6 @@ type cluster struct {
 	api.BuiltinModule
 	rpc       api.IRpc
 	discovery api.IDiscovery
-	lbDict    *maputil.ConcurrentMap[string, api.IBalancer]
 }
 
 func (c *cluster) Name() string {
@@ -38,7 +37,6 @@ func (c *cluster) Name() string {
 }
 
 func (c *cluster) Init() {
-	c.lbDict = maputil.NewConcurrentMap[string, api.IBalancer](10)
 	c.initRpc()
 	c.initDiscovery()
 }
@@ -59,22 +57,6 @@ func (c *cluster) initRpc() {
 func (c *cluster) Run() {
 	c.discovery.Run()
 	c.rpc.Run()
-}
-
-func (c *cluster) SetLB(service string, lb api.IBalancer) {
-	c.lbDict.Set(service, lb)
-}
-
-func (c *cluster) balance(service string) api.INodeBase {
-	lb, ok := c.lbDict.Get(service)
-	if !ok || lb == nil {
-		lb = balancer.NewRandom()
-	}
-	nodes := c.discovery.GetByKind(service)
-	if lb == nil {
-		return nil
-	}
-	return lb.Do(nodes, nil)
 }
 
 func (c *cluster) Discovery() api.IDiscovery {
@@ -104,6 +86,6 @@ func (c *cluster) Stop() *api.Error {
 	if err := c.rpc.Stop(); err != nil {
 		return err
 	}
-	c.Log().Info("cluster module stop")
+	zlog.Info("cluster module stop")
 	return nil
 }

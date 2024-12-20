@@ -10,6 +10,7 @@ package nats
 
 import (
 	"github.com/dingqinghui/gas/api"
+	"github.com/dingqinghui/gas/zlog"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 	"time"
@@ -42,11 +43,11 @@ func (c *Conn) Init() {
 func (c *Conn) connect() {
 	con, err := nats.Connect(c.cfg.urls)
 	if err != nil {
-		c.Log().Error("nats connect err", zap.String("address", c.cfg.urls), zap.Error(err))
+		zlog.Error("nats connect err", zap.String("address", c.cfg.urls), zap.Error(err))
 		return
 	}
 	c.rawCon = con
-	c.Log().Info("nats connect", zap.String("address", c.cfg.urls))
+	zlog.Info("nats connect", zap.String("address", c.cfg.urls))
 }
 
 // Call
@@ -60,10 +61,10 @@ func (c *Conn) connect() {
 func (c *Conn) Call(topic string, data []byte, timeout time.Duration) ([]byte, error) {
 	msg, err := c.rawCon.Request(topic, data, timeout)
 	if err != nil {
-		c.Log().Error("nats request", zap.String("subj", topic), zap.Error(err))
+		zlog.Error("nats request", zap.String("subj", topic), zap.Error(err))
 		return nil, err
 	}
-	c.Log().Info("nats request", zap.String("topic", topic))
+	zlog.Info("nats request", zap.String("topic", topic))
 	return msg.Data, err
 }
 
@@ -75,24 +76,24 @@ func (c *Conn) Call(topic string, data []byte, timeout time.Duration) ([]byte, e
 // @return err
 func (c *Conn) Send(topic string, data []byte) *api.Error {
 	if err := c.rawCon.Publish(topic, data); err != nil {
-		c.Log().Error("nats publish error", zap.Error(err))
+		zlog.Error("nats publish error", zap.Error(err))
 		return api.ErrNatsSend
 	}
-	c.Log().Debug("nats request", zap.String("topic", topic))
+	zlog.Debug("nats request", zap.String("topic", topic))
 	return nil
 }
 
 func (c *Conn) Subscribe(subject string, process api.RpcProcessHandler) {
 	_, chanErr := c.rawCon.ChanSubscribe(subject, c.msgChan)
 	if chanErr != nil {
-		c.Log().Error("nats chan subscribe error", zap.Error(chanErr))
+		zlog.Error("nats chan subscribe error", zap.Error(chanErr))
 		return
 	}
 	c.Node().Workers().Submit(func() {
 		for msg := range c.msgChan {
 			respond := func(data []byte) *api.Error {
 				if err := msg.Respond(data); err != nil {
-					c.Log().Error("nats chan respond error", zap.Error(err))
+					zlog.Error("nats chan respond error", zap.Error(err))
 					return api.ErrNatsRespond
 				}
 				return nil
@@ -104,7 +105,7 @@ func (c *Conn) Subscribe(subject string, process api.RpcProcessHandler) {
 		}
 
 	}, func(err interface{}) {
-		c.Log().Panic("nats process panic", zap.Error(err.(error)))
+		zlog.Panic("nats process panic", zap.Error(err.(error)))
 	})
 }
 
@@ -118,6 +119,6 @@ func (c *Conn) Stop() *api.Error {
 	if c.rawCon != nil {
 		c.rawCon.Close()
 	}
-	c.Log().Info("nats module stop")
+	zlog.Info("nats module stop")
 	return nil
 }

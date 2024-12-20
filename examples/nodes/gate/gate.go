@@ -15,6 +15,7 @@ import (
 	"github.com/dingqinghui/gas/examples/common"
 	"github.com/dingqinghui/gas/network"
 	"github.com/dingqinghui/gas/node"
+	"github.com/dingqinghui/gas/zlog"
 	"go.uber.org/zap"
 	"time"
 )
@@ -24,9 +25,11 @@ type ServerAgent struct {
 }
 
 func (a *ServerAgent) Login(session *api.Session, message *common.ClientMessage) *api.Error {
-	a.Ctx.Info("agent receive message", zap.Any("message", message))
+	zlog.Info("agent receive message", zap.Any("message", message))
 
-	chatPid := a.Ctx.Node().Cluster().NewPid("chat", balancer.NewRandom(), nil)
+	cluster := a.Ctx.System().Node().Cluster()
+
+	chatPid := cluster.NewPid("chat", balancer.NewRandom(), nil)
 	if chatPid == nil {
 		return api.ErrPidIsNil
 	}
@@ -49,7 +52,7 @@ func (a *ServerAgent) Login(session *api.Session, message *common.ClientMessage)
 		return err
 	}
 	// respond to client
-	return a.Ctx.Response(session, message)
+	return a.Response(session, message)
 }
 
 func HandshakeAuthFunc(entity api.INetEntity, data []byte) ([]byte, *api.Error) {
@@ -57,11 +60,11 @@ func HandshakeAuthFunc(entity api.INetEntity, data []byte) ([]byte, *api.Error) 
 	if m == nil {
 		return nil, nil
 	}
-	entity.Node().Log().Info("HandshakeFuncAuth", zap.String("version", m.Version))
+	zlog.Info("HandshakeFuncAuth", zap.String("version", m.Version))
 	// 验证客户端信息
 	if m.Version == "" {
 		if err := entity.Close(errors.New("handshake auth fail")); err != nil {
-			entity.Node().Log().Info("HandshakeFuncAuth", zap.Error(err))
+			zlog.Info("HandshakeFuncAuth", zap.Error(err))
 			return nil, err
 		}
 		return nil, api.Ok
@@ -80,6 +83,11 @@ func RunGateNode(path string) {
 		NodeType: "gate",
 		ActorId:  0,
 		Method:   "Login",
+	})
+	router.Add(2, &network.Router{
+		NodeType: "chat",
+		ActorId:  0,
+		Method:   "Chat",
 	})
 	addrArray := gateNode.GetViper().GetStringSlice("network")
 	for _, addr := range addrArray {
