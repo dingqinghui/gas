@@ -33,12 +33,14 @@ func (p *Pid) String() string {
 func (p *Pid) GetName() string {
 	return p.Name
 }
+
 func NewRemotePid(nodeId uint64, name string) *Pid {
 	return &Pid{
 		NodeId: nodeId,
 		Name:   name,
 	}
 }
+
 func NewPidWithName(name string) *Pid {
 	return &Pid{
 		Name: name,
