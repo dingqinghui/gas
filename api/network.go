@@ -47,6 +47,8 @@ type INetRouters interface {
 	Get(msgId uint16) INetRouter
 }
 
+type NetRouterFunc func(session *Session, msg *NetworkMessage) *Error
+
 type INetRouter interface {
 	GetNodeType() string
 	GetActorId() uint64
@@ -67,6 +69,7 @@ type INetEntity interface {
 	Node() INode
 	RawCon() gnet.Conn
 	GetAgent() *Pid
+	Session() *Session
 }
 
 type NetworkPacket struct {
@@ -98,3 +101,20 @@ type NetworkMessage struct {
 
 func (m *NetworkMessage) GetID() uint16   { return m.Id }
 func (m *NetworkMessage) GetData() []byte { return m.Data }
+
+type Session struct {
+	Agent  *Pid
+	Mid    uint16
+	entity INetEntity
+}
+
+func (s *Session) GetEntity() INetEntity {
+	return s.entity
+}
+
+func NewSession(entity INetEntity) *Session {
+	ses := new(Session)
+	ses.Agent = entity.GetAgent()
+	ses.entity = entity
+	return ses
+}

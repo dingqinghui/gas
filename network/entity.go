@@ -13,14 +13,12 @@ import (
 	"github.com/dingqinghui/gas/api"
 	xerror2 "github.com/dingqinghui/gas/extend/xerror"
 	"github.com/dingqinghui/gas/zlog"
-	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/panjf2000/gnet/v2"
 	"go.uber.org/zap"
 	"sync/atomic"
 )
 
 var autoId atomic.Uint64
-var SessionHub = maputil.NewConcurrentMap[int64, *api.Session](10)
 
 func newEntity(server api.INetServer, opts *Options, rawCon gnet.Conn) *Entity {
 	entity := &Entity{
@@ -107,6 +105,7 @@ func (s *Entity) exec(packet api.INetPacket) error {
 }
 
 func (s *Entity) spawnAgent() *api.Error {
+	s.session = api.NewSession(s)
 	pid, err := s.node.System().Spawn(s.opts.AgentProducer, s)
 	if err != nil {
 		zlog.Error("entity spawn agent err",
@@ -211,4 +210,8 @@ func (s *Entity) RawCon() gnet.Conn {
 }
 func (s *Entity) GetAgent() *api.Pid {
 	return s.agentPid
+}
+
+func (s *Entity) Session() *api.Session {
+	return s.session
 }

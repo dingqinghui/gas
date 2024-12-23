@@ -36,7 +36,6 @@ func defaultOptions() *Options {
 		},
 		HandshakeBody:    nil,
 		GNetOpts:         nil,
-		Router:           new(Routers),
 		Serializer:       serializer.Json,
 		HeartBeatTimeout: time.Second * 5,
 	}
@@ -48,20 +47,20 @@ type Options struct {
 	HandshakeAuth    HandshakeAuthFunc
 	HandshakeBody    []byte
 	GNetOpts         []gnet.Option
-	Router           api.INetRouters
+	RouterHandler    api.NetRouterFunc
 	Serializer       api.ISerializer
 	HeartBeatTimeout time.Duration
+}
+
+func WithRouterHandler(routerHandler api.NetRouterFunc) Option {
+	return func(op *Options) {
+		op.RouterHandler = routerHandler
+	}
 }
 
 func WithAgentProducer(producer api.ActorProducer) Option {
 	return func(op *Options) {
 		op.AgentProducer = producer
-	}
-}
-
-func WithRouter(router api.INetRouters) Option {
-	return func(op *Options) {
-		op.Router = router
 	}
 }
 

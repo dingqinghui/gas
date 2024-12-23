@@ -128,15 +128,13 @@ const (
 	ActorInnerMessage
 )
 
-type ActorBaseMessage struct {
-}
-
 type ActorMessage struct {
 	Typ        int
 	MethodName string
 	From       *Pid
 	To         *Pid
 	Data       []byte
+	Mid        uint16
 	Session    *Session
 	respond    RespondFun
 }
@@ -152,11 +150,13 @@ func (m *ActorMessage) SetRespond(respond RespondFun) {
 	m.respond = respond
 }
 
-func BuildNetMessage(session *Session, methodName string) *ActorMessage {
+func BuildNetMessage(session *Session, methodName string, msg *NetworkMessage) *ActorMessage {
 	return &ActorMessage{
 		Typ:        ActorNetMessage,
 		MethodName: methodName,
 		Session:    session,
+		Mid:        msg.GetID(),
+		Data:       msg.Data,
 	}
 }
 func BuildInnerMessage(from, to *Pid, methodName string, data []byte) *ActorMessage {

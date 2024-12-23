@@ -12,7 +12,6 @@ import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/zlog"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 )
 
 type IFsmState interface {
@@ -158,25 +157,13 @@ func (s *workingState) Exec(packet api.INetPacket) *api.Error {
 }
 func (s *workingState) processDataPack(packet api.INetPacket) *api.Error {
 	msg := msgCodec.Decode(packet.GetData())
-	router := s.opts.Router.Get(msg.GetID())
+	router := s.opts.RouterHandler
 	if router == nil {
 		zlog.Error("net entity fsm exec", zap.Uint64("id", s.ID()),
 			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrNetworkRoute))
 		return api.ErrNetworkRoute
 	}
-	to := s.agentPid
-	if !slices.Contains(s.node.GetTags(), router.GetNodeType()) {
-		to = api.NewPidWithName(router.GetNodeType())
-	}
-
-	session := api.NewSession(s.Entity, msg)
-	message := api.BuildNetMessage(session, router.GetMethod())
-	if err := s.node.System().PostMessage(to, message); err != nil {
-		zlog.Error("net entity fsm exec", zap.Uint64("id", s.ID()),
-			zap.Int("typ", int(packet.GetTyp())), zap.Error(err))
-		return err
-	}
-	return nil
+	return router(s.Session(), msg)
 }
 
 func (s *workingState) Next() IFsmState {

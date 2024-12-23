@@ -65,6 +65,7 @@ func (a *baseActorContext) invokerNetMessage(msg *api.ActorMessage) *api.Error {
 	if md == nil {
 		return api.ErrActorNotMethod
 	}
+	msg.Session.Mid = msg.Mid
 	method := &networkMethod{md}
 	return method.call(a, msg)
 }
@@ -130,7 +131,7 @@ func (a *baseActorContext) Call(to *api.Pid, funcName string, request, reply int
 }
 
 func (a *baseActorContext) Response(session *api.Session, s2c interface{}) *api.Error {
-	return a.Push(session, session.Msg.GetID(), s2c)
+	return a.Push(session, session.Mid, s2c)
 }
 
 func (a *baseActorContext) Push(session *api.Session, mid uint16, s2c interface{}) *api.Error {

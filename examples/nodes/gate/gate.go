@@ -17,6 +17,7 @@ import (
 	"github.com/dingqinghui/gas/node"
 	"github.com/dingqinghui/gas/zlog"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 	"time"
 )
 
@@ -52,7 +53,11 @@ func (a *ServerAgent) Login(session *api.Session, message *common.ClientMessage)
 		return err
 	}
 	// respond to client
-	return a.Response(session, message)
+	if err := a.Ctx.Response(session, message); err != nil {
+		return nil
+	}
+
+	return a.Ctx.Push(session, 1, message)
 }
 
 func HandshakeAuthFunc(entity api.INetEntity, data []byte) ([]byte, *api.Error) {
@@ -73,18 +78,36 @@ func HandshakeAuthFunc(entity api.INetEntity, data []byte) ([]byte, *api.Error) 
 	return common.MarshalHandshakeMessage(m), nil
 }
 
+var routers = network.NewRouters()
+
+func NetRouterFunc(session *api.Session, msg *api.NetworkMessage) *api.Error {
+	router := routers.Get(msg.GetID())
+	if router == nil {
+		return api.ErrNetworkRoute
+	}
+	to := session.Agent
+	nodeInfo := session.GetEntity().Node()
+	if !slices.Contains(nodeInfo.GetTags(), router.GetNodeType()) {
+		to = api.NewPidWithName(router.GetNodeType())
+	}
+	message := api.BuildNetMessage(session, router.GetMethod(), msg)
+	if err := nodeInfo.System().PostMessage(to, message); err != nil {
+		return err
+	}
+	return nil
+}
+
 func RunGateNode(path string) {
 	gateNode := node.New(path)
 
 	producer := func() api.IActor { return new(ServerAgent) }
 
-	router := network.NewRouters()
-	router.Add(1, &network.Router{
+	routers.Add(1, &network.Router{
 		NodeType: "gate",
 		ActorId:  0,
 		Method:   "Login",
 	})
-	router.Add(2, &network.Router{
+	routers.Add(2, &network.Router{
 		NodeType: "chat",
 		ActorId:  0,
 		Method:   "Chat",
@@ -94,7 +117,7 @@ func RunGateNode(path string) {
 		netModule := network.NewListener(gateNode, addr,
 			network.WithHandshakeAuth(HandshakeAuthFunc),
 			network.WithAgentProducer(producer),
-			network.WithRouter(router))
+			network.WithRouterHandler(NetRouterFunc))
 
 		gateNode.AddModule(netModule)
 	}
