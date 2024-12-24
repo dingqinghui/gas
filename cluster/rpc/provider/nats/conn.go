@@ -89,7 +89,7 @@ func (c *Conn) Subscribe(subject string, process api.RpcProcessHandler) {
 		zlog.Error("nats chan subscribe error", zap.Error(chanErr))
 		return
 	}
-	c.Node().Workers().Submit(func() {
+	c.Node().Submit(func() {
 		for msg := range c.msgChan {
 			respond := func(data []byte) *api.Error {
 				if err := msg.Respond(data); err != nil {

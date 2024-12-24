@@ -31,7 +31,8 @@ type (
 		System() IActorSystem
 		Cluster() ICluster
 		Base() INodeBase
-		Workers() IWorkers
+		Submit(fn func(), recoverFun func(err interface{}))
+		Try(fn func(), reFun func(err interface{}))
 		NextId() int64
 		AddModule(modules ...IModule)
 		Terminate(reason string)

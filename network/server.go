@@ -204,7 +204,7 @@ func (b *builtinServer) Stop() *api.Error {
 	return nil
 }
 func (b *builtinServer) run(handler gnet.EventHandler) {
-	b.Node().Workers().Submit(func() {
+	b.Node().Submit(func() {
 		xerror.Assert(gnet.Run(handler, b.protoAddr, b.Options().GNetOpts...))
 	}, nil)
 }

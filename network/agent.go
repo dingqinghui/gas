@@ -24,3 +24,7 @@ func (t *AgentActor) OnInit(ctx api.IActorContext) *api.Error {
 	t.Session = t.INetEntity.Session()
 	return nil
 }
+
+func (t *AgentActor) Push(data []byte) *api.Error {
+	return t.SendPacket(NewDataPacket(data))
+}

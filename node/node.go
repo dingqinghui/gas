@@ -15,13 +15,14 @@ import (
 	"github.com/dingqinghui/gas/cluster"
 	"github.com/dingqinghui/gas/extend/snowflake"
 	"github.com/dingqinghui/gas/extend/xerror"
-	"github.com/dingqinghui/gas/workers"
 	"github.com/dingqinghui/gas/zlog"
 	"github.com/duke-git/lancet/v2/convertor"
+	"github.com/panjf2000/ants/v2"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 )
 
@@ -31,7 +32,6 @@ func New(configPath string) api.INode {
 		BaseNode:   new(api.BaseNode),
 		stopChan:   make(chan string),
 	}
-	node.workers = workers.New(node)
 	node.Init()
 	return node
 }
@@ -45,15 +45,19 @@ type Node struct {
 	actorSystem api.IActorSystem
 	viper       *viper.Viper
 	cluster     api.ICluster
-	workers     api.IWorkers
 	modules     []api.IModule
 	idWorker    *snowflake.IdWorker
 	stopChan    chan string
+	goCount     atomic.Int64
+	panicCount  atomic.Uint64
+	pool        *ants.Pool
 }
 
 func (a *Node) Init() {
 	// init config parse
 	a.initViper()
+	// init goroutine pool
+	a.initGoPool()
 	// init node
 	a.initBaseNode()
 	// init log
@@ -63,6 +67,12 @@ func (a *Node) Init() {
 	// init cluster
 	a.initCluster()
 	zlog.Info("node init finish............")
+}
+
+func (a *Node) initGoPool() {
+	pool, err := ants.NewPool(1000)
+	xerror.Assert(err)
+	a.pool = pool
 }
 
 func (a *Node) initViper() {
@@ -127,9 +137,6 @@ func (a *Node) AddModule(modules ...api.IModule) {
 func (a *Node) Cluster() api.ICluster {
 	return a.cluster
 }
-func (a *Node) Workers() api.IWorkers {
-	return a.workers
-}
 
 func (a *Node) Name() string {
 	return "node" + convertor.ToString(a.GetID())
@@ -168,8 +175,32 @@ func (a *Node) terminate(reason string) {
 			if module == nil {
 				continue
 			}
-			module.Stop()
+			_ = module.Stop()
 		}
 	}
 	zlog.Info("node terminate", zap.String("reason", reason))
+}
+
+func (a *Node) Submit(fn func(), recoverFun func(err interface{})) {
+	err := a.pool.Submit(func() {
+		a.goCount.Add(1)
+		a.Try(fn, recoverFun)
+		a.goCount.Add(-1)
+	})
+	if err != nil {
+		return
+	}
+}
+
+func (a *Node) Try(fn func(), reFun func(err interface{})) {
+	defer func() {
+		if err := recover(); err != nil {
+			a.panicCount.Add(1)
+			if reFun != nil {
+				reFun(err)
+			}
+			zlog.Error("panic", zap.Error(err.(error)), zap.Stack("stack"))
+		}
+	}()
+	fn()
 }

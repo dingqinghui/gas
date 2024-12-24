@@ -9,7 +9,6 @@
 package workers
 
 import (
-	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/xerror"
 	"github.com/dingqinghui/gas/zlog"
 	"github.com/panjf2000/ants/v2"
@@ -17,23 +16,22 @@ import (
 	"sync/atomic"
 )
 
-func New(node api.INode) *workers {
+func New() *workers {
 	w := new(workers)
 	pool, err := ants.NewPool(1000)
 	xerror.Assert(err)
-	w.node = node
 	w.pool = pool
 	return w
 }
 
 type workers struct {
-	node       api.INode
 	pool       *ants.Pool
 	count      atomic.Int64
 	panicCount atomic.Uint64
 }
 
 func (w *workers) Submit(fn func(), recoverFun func(err interface{})) {
+
 	err := w.pool.Submit(func() {
 		w.count.Add(1)
 		w.Try(fn, recoverFun)
