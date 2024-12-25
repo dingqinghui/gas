@@ -30,8 +30,11 @@ type discovery struct {
 	api.BuiltinModule
 	provider    api.IDiscoveryProvider
 	clusterName string
-	waitIndex   uint64
-	nodeDict    map[string]*api.BaseNode
+	list        *api.NodeList
+}
+
+func (d *discovery) Init() {
+	d.list = api.NewNodeList()
 }
 
 func (d *discovery) Name() string {
@@ -43,25 +46,26 @@ func (d *discovery) Run() {
 		return
 	}
 	// watch node
-	api.Assert(d.provider.WatchNode(d.clusterName, func(waitIndex uint64, nodeDict map[string]*api.BaseNode) {
-		if waitIndex <= d.waitIndex {
+	api.Assert(d.provider.WatchNode(d.clusterName, func(waitIndex uint64, nodeDict map[uint64]*api.BaseNode) {
+		if waitIndex <= d.list.LastEventId {
 			return
 		}
-		d.waitIndex = waitIndex
-		d.nodeDict = nodeDict
+		topology := d.list.UpdateClusterTopology(nodeDict, waitIndex)
+		if len(topology.Left) != 0 || len(topology.Joined) != 0 {
+			_ = d.Node().System().EventBus().Notify(api.EventUpdateCluster, nil, topology)
+		}
 	}))
-
 	// add node
 	api.Assert(d.AddNode(d.Node().Base()))
 }
 
-func (d *discovery) GetById(nodeId string) api.INodeBase {
-	v, _ := d.nodeDict[nodeId]
+func (d *discovery) GetById(nodeId uint64) api.INodeBase {
+	v, _ := d.list.Dict[nodeId]
 	return v
 }
 
 func (d *discovery) GetByKind(kind string) (result []api.INodeBase) {
-	for _, node := range d.nodeDict {
+	for _, node := range d.list.Dict {
 		if slices.Contains(node.GetTags(), kind) {
 			result = append(result, convertor.DeepClone(node))
 		}
@@ -70,7 +74,7 @@ func (d *discovery) GetByKind(kind string) (result []api.INodeBase) {
 }
 
 func (d *discovery) GetAll() (result []api.INodeBase) {
-	for _, node := range d.nodeDict {
+	for _, node := range d.list.Dict {
 		result = append(result, convertor.DeepClone(node))
 	}
 	return
@@ -98,7 +102,7 @@ func (d *discovery) Stop() *api.Error {
 		return err
 	}
 	if d.provider != nil {
-		d.provider.Stop()
+		return d.provider.Stop()
 	}
 	zlog.Info("discovery module stop")
 	return nil

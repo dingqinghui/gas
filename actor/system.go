@@ -28,6 +28,7 @@ type System struct {
 	timeout     time.Duration
 	serializer  api.ISerializer
 	routerDict  *maputil.ConcurrentMap[string, api.IActorRouter]
+	eventBus    *EventBus
 }
 
 func NewSystem(node api.INode) api.IActorSystem {
@@ -44,6 +45,7 @@ func (s *System) Init() {
 	s.routerDict = maputil.NewConcurrentMap[string, api.IActorRouter](10)
 	s.timeout = time.Second * 1
 	s.serializer = serializer.Json
+	s.eventBus = NewEventBus(s)
 }
 
 func (s *System) Name() string {
@@ -106,6 +108,9 @@ func (s *System) FindByName(name string) api.IProcess {
 }
 
 func (s *System) RegisterName(name string, pid *api.Pid) *api.Error {
+	if name == "" {
+		return nil
+	}
 	if pid == nil {
 		return api.ErrPidIsNil
 	}
@@ -136,14 +141,6 @@ func (s *System) Spawn(producer api.ActorProducer, params interface{}, opts ...a
 	}
 	s.processDict.Set(pid.GetUniqId(), process)
 	return pid, nil
-}
-
-func (s *System) SpawnWithName(name string, producer api.ActorProducer, params interface{}, opts ...api.ProcessOption) (*api.Pid, *api.Error) {
-	pid, err := s.Spawn(producer, params, opts...)
-	if err != nil || pid == nil {
-		return nil, err
-	}
-	return pid, s.RegisterName(name, pid)
 }
 
 func (s *System) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
@@ -231,16 +228,19 @@ func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...a
 
 	actor := producer()
 	r := s.GetOrSetRouter(actor)
-
+	name := opt.Name
 	context := NewBaseActorContext()
 	context.actor = actor
 	context.system = s
 	context.router = r
 	context.pid = s.NextPid()
 	context.initParams = params
+	context.name = name
 
 	process := NewBaseProcess(context, mb)
 	context.process = process
+
+	_ = s.RegisterName(name, context.pid)
 
 	mb.RegisterHandlers(context, getDispatcher(opt))
 	// notify actor start
@@ -295,4 +295,8 @@ func (s *System) Stop() *api.Error {
 	s.processDict = maputil.NewConcurrentMap[uint64, api.IProcess](10)
 	zlog.Info("actor system stop")
 	return nil
+}
+
+func (s *System) EventBus() api.IEventBus {
+	return s.eventBus
 }

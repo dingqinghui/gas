@@ -86,7 +86,7 @@ func (c *consulProvider) monitorMemberStatusChanges(clusterName string, f api2.E
 		zlog.Error("consul discovery agent err", zap.String("clusterName", clusterName), zap.Error(err))
 		return api2.ErrConsul
 	}
-	nodeDict := make(map[string]*api2.BaseNode)
+	nodeDict := make(map[uint64]*api2.BaseNode)
 	for _, service := range services {
 		id, _ := convertor.ToInt(service.Service.ID)
 		node := &api2.BaseNode{
@@ -97,7 +97,7 @@ func (c *consulProvider) monitorMemberStatusChanges(clusterName string, f api2.E
 			Tags:    service.Service.Tags,
 			Meta:    service.Service.Meta,
 		}
-		nodeDict[service.Service.ID] = node
+		nodeDict[node.GetID()] = node
 	}
 	c.waitIndex = meta.LastIndex
 	f(c.waitIndex, nodeDict)

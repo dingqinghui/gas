@@ -16,6 +16,7 @@ import (
 )
 
 type baseActorContext struct {
+	name       string
 	actor      api.IActor
 	process    api.IProcess
 	system     api.IActorSystem
@@ -23,13 +24,20 @@ type baseActorContext struct {
 	router     api.IActorRouter
 	pid        *api.Pid
 	initParams interface{}
+	events     map[string]struct{}
 }
 
 var _ api.IActorContext = &baseActorContext{}
 var _ api.IActorMessageInvoker = &baseActorContext{}
 
 func NewBaseActorContext() *baseActorContext {
-	return new(baseActorContext)
+	ctx := new(baseActorContext)
+	ctx.events = make(map[string]struct{})
+	return ctx
+}
+
+func (a *baseActorContext) Name() string {
+	return a.name
 }
 
 func (a *baseActorContext) InvokerMessage(msg interface{}) *api.Error {
@@ -45,9 +53,14 @@ func (a *baseActorContext) InvokerMessage(msg interface{}) *api.Error {
 }
 
 func (a *baseActorContext) invokerMessage(msg *api.ActorMessage) *api.Error {
-	if msg.MethodName == InitFuncName {
+
+	switch msg.MethodName {
+	case InitFuncName:
 		return a.Actor().OnInit(a)
+	case StopFuncName:
+		return a.OnStop()
 	}
+
 	switch msg.Typ {
 	case api.ActorInnerMessage:
 		return a.invokerInnerMessage(msg)
@@ -115,10 +128,12 @@ func (a *baseActorContext) Router() api.IActorRouter {
 }
 
 func (a *baseActorContext) RegisterName(name string) *api.Error {
+	a.name = name
 	return a.System().RegisterName(name, a.Self())
 }
 
 func (a *baseActorContext) UnregisterName(name string) (*api.Pid, *api.Error) {
+	a.name = ""
 	return a.System().UnregisterName(name)
 }
 
@@ -158,4 +173,28 @@ func (a *baseActorContext) Push(session *api.Session, mid uint16, s2c interface{
 		message := api.BuildInnerMessage(a.Self(), session.Agent, "Push", mData)
 		return a.System().PostMessage(session.Agent, message)
 	}
+}
+
+func (a *baseActorContext) RegisterEvent(eventName string) {
+	a.System().EventBus().Register(eventName, a.Process())
+	a.events[eventName] = struct{}{}
+}
+
+func (a *baseActorContext) UnRegisterEvent(eventName string) {
+	a.System().EventBus().UnRegister(eventName, a.Self())
+	delete(a.events, eventName)
+}
+
+func (a *baseActorContext) NotifyEvent(eventName string, msg interface{}) *api.Error {
+	return a.System().EventBus().Notify(eventName, a.Self(), msg)
+}
+
+func (a *baseActorContext) OnStop() *api.Error {
+	for event, _ := range a.events {
+		a.UnRegisterEvent(event)
+	}
+	if a.name != "" {
+		_, _ = a.System().UnregisterName(a.name)
+	}
+	return a.Actor().OnStop()
 }

@@ -28,6 +28,7 @@ type (
 		Throughput() int
 	}
 	IActorContext interface {
+		Name() string
 		Message() *ActorMessage
 		Process() IProcess
 		System() IActorSystem
@@ -41,6 +42,9 @@ type (
 		Call(to *Pid, funcName string, request, reply interface{}) *Error
 		Response(session *Session, s2c interface{}) *Error
 		Push(session *Session, mid uint16, s2c interface{}) *Error
+		RegisterEvent(eventName string)
+		UnRegisterEvent(eventName string)
+		NotifyEvent(eventName string, msg interface{}) *Error
 	}
 
 	IProcess interface {
@@ -60,7 +64,6 @@ type (
 	IActorSystem interface {
 		IModule
 		Spawn(producer ActorProducer, params interface{}, opts ...ProcessOption) (*Pid, *Error)
-		SpawnWithName(name string, producer ActorProducer, params interface{}, opts ...ProcessOption) (*Pid, *Error)
 		NextPid() *Pid
 		Kill(pid *Pid) *Error
 		AddTimer(pid *Pid, d time.Duration, funcName string) *Error
@@ -77,6 +80,14 @@ type (
 		IsLocalPid(pid *Pid) bool
 		SetRouter(name string, router IActorRouter)
 		GetOrSetRouter(actor IActor) IActorRouter
+		EventBus() IEventBus
+	}
+
+	IEventBus interface {
+		Register(eventName string, process IProcess)
+		UnRegister(eventName string, pid *Pid)
+		Notify(eventName string, from *Pid, msg interface{}) *Error
+		Range(eventName string, f func(IProcess) bool)
 	}
 
 	IActorRouter interface {
@@ -91,6 +102,7 @@ type (
 	ActorProcessOptions struct {
 		Dispatcher IActorDispatcher
 		Mailbox    IActorMailbox
+		Name       string
 	}
 )
 
@@ -111,6 +123,11 @@ func WithActorDispatcher(dispatcher IActorDispatcher) ProcessOption {
 func WithActorMailBox(mailbox IActorMailbox) ProcessOption {
 	return func(b *ActorProcessOptions) {
 		b.Mailbox = mailbox
+	}
+}
+func WithActorName(name string) ProcessOption {
+	return func(b *ActorProcessOptions) {
+		b.Name = name
 	}
 }
 

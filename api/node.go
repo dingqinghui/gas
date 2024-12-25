@@ -49,15 +49,10 @@ type (
 	}
 
 	Topology struct {
-		EventId uint64
-		Alive   []INodeBase
-		Joined  []INodeBase
-		Left    []INodeBase
-	}
-
-	NodeList struct {
-		Dict        map[string]*BaseNode
-		LastEventId uint64
+		All    []INodeBase
+		Alive  []INodeBase
+		Joined []INodeBase
+		Left   []INodeBase
 	}
 )
 
@@ -84,31 +79,3 @@ func (b *BaseNode) GetTags() []string {
 func (b *BaseNode) GetMeta() map[string]string {
 	return b.Meta
 }
-
-//func NewNodeList() *NodeList {
-//	return &NodeList{
-//		Dict: make(map[string]*BaseNode),
-//	}
-//}
-//
-//func (m *NodeList) UpdateClusterTopology(nodeDict map[string]*BaseNode, lastEventId uint64) *Topology {
-//	if m.LastEventId >= lastEventId {
-//		return nil
-//	}
-//	tplg := &Topology{EventId: lastEventId}
-//	for _, node := range nodeDict {
-//		if _, ok := m.Dict[node.GetID()]; ok {
-//			tplg.Alive = append(tplg.Alive, node)
-//		} else {
-//			tplg.Joined = append(tplg.Joined, node)
-//		}
-//	}
-//	for id := range m.Dict {
-//		if _, ok := nodeDict[id]; !ok {
-//			tplg.Left = append(tplg.Left, m.Dict[id])
-//		}
-//	}
-//	m.Dict = nodeDict
-//	m.LastEventId = lastEventId
-//	return tplg
-//}

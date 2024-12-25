@@ -14,3 +14,11 @@
 {"L":"info","T":"2024/12/24 14:15:53.059358+0800","C":"consul/provider.go:136","M":"consul health check begin","nodeId":"1002"}
 {"L":"info","T":"2024/12/24 14:15:53.059371+0800","C":"rpc/rpc.go:49","M":"rpc subscribe","nodeId":"1002","topic":"node.1002"}
 {"L":"info","T":"2024/12/24 14:15:53.059951+0800","C":"node/node.go:118","M":"node running............","nodeId":"1002"}
+{"L":"info","T":"2024/12/24 18:45:20.880786+0800","C":"nats/conn.go:50","M":"nats connect","nodeId":"1002","address":"127.0.0.1:4222"}
+{"L":"info","T":"2024/12/24 18:45:20.913439+0800","C":"consul/provider.go:55","M":"consul connect success..","nodeId":"1002","consulAddress":"127.0.0.1:8500"}
+{"L":"info","T":"2024/12/24 18:45:20.913439+0800","C":"node/node.go:69","M":"node init finish............","nodeId":"1002"}
+{"L":"info","T":"2024/12/24 18:45:20.919622+0800","C":"consul/provider.go:68","M":"consul watch begin","nodeId":"1002","clusterName":"clusterName"}
+{"L":"info","T":"2024/12/24 18:45:20.980778+0800","C":"consul/provider.go:129","M":"consul node  register ","nodeId":"1002","nodeId":1002,"nodeName":"clusterName","address":"","port":0,"tags":["gate"]}
+{"L":"info","T":"2024/12/24 18:45:20.980778+0800","C":"consul/provider.go:136","M":"consul health check begin","nodeId":"1002"}
+{"L":"info","T":"2024/12/24 18:45:20.981294+0800","C":"rpc/rpc.go:49","M":"rpc subscribe","nodeId":"1002","topic":"node.1002"}
+{"L":"info","T":"2024/12/24 18:45:20.981811+0800","C":"node/node.go:118","M":"node running............","nodeId":"1002"}
