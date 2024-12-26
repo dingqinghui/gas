@@ -154,7 +154,7 @@ func (s *System) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error 
 		}
 		return process.PostMessage(message)
 	} else {
-		return s.Node().Cluster().Rpc().PostMessage(to, message)
+		return s.Node().Rpc().PostMessage(to, message)
 	}
 }
 
@@ -186,7 +186,7 @@ func (s *System) Call(from, to *api.Pid, funcName string, request, reply interfa
 		}
 		rsp = process.PostMessageAndWait(message)
 	} else {
-		rsp = s.Node().Cluster().Rpc().Call(to, s.timeout, message)
+		rsp = s.Node().Rpc().Call(to, s.timeout, message)
 	}
 	if rsp == nil {
 		return nil

@@ -29,7 +29,8 @@ type (
 		Wait()
 		GetViper() *viper.Viper
 		System() IActorSystem
-		Cluster() ICluster
+		Discovery() IDiscovery
+		Rpc() IRpc
 		Base() INodeBase
 		Submit(fn func(), recoverFun func(err interface{}))
 		Try(fn func(), reFun func(err interface{}))

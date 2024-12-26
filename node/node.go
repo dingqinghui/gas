@@ -12,7 +12,10 @@ import (
 	"fmt"
 	"github.com/dingqinghui/gas/actor"
 	"github.com/dingqinghui/gas/api"
-	"github.com/dingqinghui/gas/cluster"
+	"github.com/dingqinghui/gas/cluster/discovery"
+	"github.com/dingqinghui/gas/cluster/discovery/provider/consul"
+	"github.com/dingqinghui/gas/cluster/rpc"
+	"github.com/dingqinghui/gas/cluster/rpc/provider/nats"
 	"github.com/dingqinghui/gas/extend/snowflake"
 	"github.com/dingqinghui/gas/extend/xerror"
 	"github.com/dingqinghui/gas/zlog"
@@ -44,7 +47,8 @@ type Node struct {
 	configPath  string
 	actorSystem api.IActorSystem
 	viper       *viper.Viper
-	cluster     api.ICluster
+	rpc         api.IRpc
+	discovery   api.IDiscovery
 	modules     []api.IModule
 	idWorker    *snowflake.IdWorker
 	stopChan    chan string
@@ -64,8 +68,10 @@ func (a *Node) Init() {
 	a.initLogger()
 	// init actor system
 	a.initActorSystem()
-	// init cluster
-	a.initCluster()
+	// init discovery
+	a.initDiscovery()
+	// init rpc
+	a.initRpc()
 	zlog.Info("node init finish............")
 }
 
@@ -107,8 +113,17 @@ func (a *Node) initActorSystem() {
 	a.actorSystem = actor.NewSystem(a)
 }
 
-func (a *Node) initCluster() {
-	a.cluster = cluster.New(a)
+func (a *Node) initDiscovery() {
+	vp := a.GetViper()
+	clusterName := vp.GetString("cluster.name")
+	provider, err := consul.NewConsulProvider(a)
+	xerror.Assert(err)
+	a.discovery = discovery.New(a, clusterName, provider)
+}
+
+func (a *Node) initRpc() {
+	msgque := nats.New(a)
+	a.rpc = rpc.New(a, msgque)
 }
 
 func (a *Node) Run() {
@@ -134,8 +149,12 @@ func (a *Node) AddModule(modules ...api.IModule) {
 	a.modules = append(a.modules, modules...)
 }
 
-func (a *Node) Cluster() api.ICluster {
-	return a.cluster
+func (a *Node) Discovery() api.IDiscovery {
+	return a.discovery
+}
+
+func (a *Node) Rpc() api.IRpc {
+	return a.rpc
 }
 
 func (a *Node) Name() string {

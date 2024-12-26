@@ -51,7 +51,7 @@ type (
 	}
 
 	INetRouter interface {
-		GetNodeType() string
+		GetService() string
 		GetActorId() uint64
 		GetMethod() string
 	}

@@ -34,18 +34,19 @@ func (b *Routers) Get(msgId uint16) api.INetRouter {
 }
 
 type Router struct {
-	NodeType string
-	ActorId  uint64
-	Method   string
+	Service string
+	ActorId uint64
+	Method  string
 }
 
-func (b *Router) GetNodeType() string {
-	return b.NodeType
+func (b *Router) GetService() string {
+	return b.Service
 }
 
 func (b *Router) GetActorId() uint64 {
 	return b.ActorId
 }
+
 func (b *Router) GetMethod() string {
 	return b.Method
 }

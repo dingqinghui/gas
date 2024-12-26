@@ -193,17 +193,13 @@ func BuildInnerMessage(from, to *Pid, methodName string, data []byte) *ActorMess
 	}
 }
 
-func NewRemotePid(nodeId uint64, name string) *Pid {
+func NewRemotePid(nodeId uint64, service string) *Pid {
 	return &Pid{
 		NodeId: nodeId,
-		Name:   name,
+		Name:   service,
 	}
 }
-func NewPidWithName(name string) *Pid {
-	return &Pid{
-		Name: name,
-	}
-}
+
 func ValidPid(pid *Pid) bool {
 	if pid == nil {
 		return false

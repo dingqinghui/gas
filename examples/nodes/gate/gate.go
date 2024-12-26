@@ -11,6 +11,7 @@ package gate
 import (
 	"errors"
 	"github.com/dingqinghui/gas/api"
+	"github.com/dingqinghui/gas/cluster"
 	"github.com/dingqinghui/gas/cluster/balancer"
 	"github.com/dingqinghui/gas/examples/common"
 	"github.com/dingqinghui/gas/network"
@@ -28,9 +29,8 @@ type ServerAgent struct {
 func (a *ServerAgent) Login(session *api.Session, message *common.ClientMessage) *api.Error {
 	zlog.Info("agent receive message", zap.Any("message", message))
 
-	cluster := a.Ctx.System().Node().Cluster()
-
-	chatPid := cluster.NewPid("chat", balancer.NewRandom(), nil)
+	node := a.Ctx.System().Node()
+	chatPid := cluster.NewPid(node, "chat", balancer.NewRandom(), nil)
 	if chatPid == nil {
 		return api.ErrPidIsNil
 	}
@@ -81,14 +81,15 @@ func HandshakeAuthFunc(entity api.INetEntity, data []byte) ([]byte, *api.Error) 
 var routers = network.NewRouters()
 
 func NetRouterFunc(session *api.Session, msg *api.NetworkMessage) *api.Error {
+	node := session.GetEntity().Node()
 	router := routers.Get(msg.GetID())
 	if router == nil {
 		return api.ErrNetworkRoute
 	}
 	to := session.Agent
 	nodeInfo := session.GetEntity().Node()
-	if !slices.Contains(nodeInfo.GetTags(), router.GetNodeType()) {
-		to = api.NewPidWithName(router.GetNodeType())
+	if !slices.Contains(nodeInfo.GetTags(), router.GetService()) {
+		to = cluster.NewPid(node, "chat", balancer.NewRandom(), nil)
 	}
 	message := api.BuildNetMessage(session, router.GetMethod(), msg)
 	if err := nodeInfo.System().PostMessage(to, message); err != nil {
@@ -103,14 +104,14 @@ func RunGateNode(path string) {
 	producer := func() api.IActor { return new(ServerAgent) }
 
 	routers.Add(1, &network.Router{
-		NodeType: "gate",
-		ActorId:  0,
-		Method:   "Login",
+		Service: "gate",
+		ActorId: 0,
+		Method:  "Login",
 	})
 	routers.Add(2, &network.Router{
-		NodeType: "chat",
-		ActorId:  0,
-		Method:   "Chat",
+		Service: "chat",
+		ActorId: 0,
+		Method:  "Chat",
 	})
 	addrArray := gateNode.GetViper().GetStringSlice("network")
 	for _, addr := range addrArray {

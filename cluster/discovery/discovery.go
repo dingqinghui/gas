@@ -23,6 +23,7 @@ func New(node api.INode, clusterName string, provider api.IDiscoveryProvider) ap
 	d.clusterName = clusterName
 	d.SetNode(node)
 	d.Init()
+	node.AddModule(d)
 	return d
 }
 

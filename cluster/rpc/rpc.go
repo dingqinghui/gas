@@ -23,6 +23,7 @@ func New(node api.INode, msgque api.IRpcMessageQue) api.IRpc {
 	r.msgque = msgque
 	r.serializer = serializer.Json
 	r.Init()
+	node.AddModule(r)
 	return r
 }
 
@@ -37,14 +38,10 @@ func (r *Rpc) Run() {
 	// 订阅本节点topic
 	topic := genTopic(nodeId)
 	r.msgque.Subscribe(topic, func(subj string, data []byte, respondFun api.RpcRespondHandler) {
-		r.Node().Submit(func() {
-			if err := r.process(data, respondFun); err != nil {
-				zlog.Error("rpc process", zap.Error(err))
-				return
-			}
-
-		}, nil)
-
+		if err := r.process(data, respondFun); err != nil {
+			zlog.Error("rpc process", zap.Error(err))
+			return
+		}
 	})
 	zlog.Info("rpc subscribe", zap.String("topic", topic))
 }
