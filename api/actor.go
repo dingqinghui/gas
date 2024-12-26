@@ -9,12 +9,38 @@
 package api
 
 import (
+	"fmt"
 	"github.com/dingqinghui/gas/extend/reflectx"
 	"time"
 )
 
+const (
+	ActorNetMessage = iota
+	ActorInnerMessage
+)
+
 type (
-	ActorEmptyMessage    = *struct{}
+	ActorEmptyMessage = *struct{}
+
+	RespondFun func(rsp *RespondMessage) *Error
+
+	ActorMessageType = byte
+
+	ActorMessage struct {
+		Typ        int
+		MethodName string
+		From       *Pid
+		To         *Pid
+		Data       []byte
+		Mid        uint16
+		Session    *Session
+		respond    RespondFun
+	}
+	RespondMessage struct {
+		Data []byte
+		Err  *Error
+	}
+
 	ActorProducer        func() IActor
 	IActorMessageInvoker interface {
 		InvokerMessage(message interface{}) *Error
@@ -104,6 +130,12 @@ type (
 		Mailbox    IActorMailbox
 		Name       string
 	}
+
+	Pid struct {
+		NodeId uint64
+		UniqId uint64
+		Name   string
+	}
 )
 
 func (r *BuiltinActor) OnInit(ctx IActorContext) *Error {
@@ -129,31 +161,6 @@ func WithActorName(name string) ProcessOption {
 	return func(b *ActorProcessOptions) {
 		b.Name = name
 	}
-}
-
-type RespondMessage struct {
-	Data []byte
-	Err  *Error
-}
-
-type RespondFun func(rsp *RespondMessage) *Error
-
-type ActorMessageType = byte
-
-const (
-	ActorNetMessage = iota
-	ActorInnerMessage
-)
-
-type ActorMessage struct {
-	Typ        int
-	MethodName string
-	From       *Pid
-	To         *Pid
-	Data       []byte
-	Mid        uint16
-	Session    *Session
-	respond    RespondFun
 }
 
 func (m *ActorMessage) Respond(rsp *RespondMessage) *Error {
@@ -184,4 +191,43 @@ func BuildInnerMessage(from, to *Pid, methodName string, data []byte) *ActorMess
 		MethodName: methodName,
 		Data:       data,
 	}
+}
+
+func NewRemotePid(nodeId uint64, name string) *Pid {
+	return &Pid{
+		NodeId: nodeId,
+		Name:   name,
+	}
+}
+func NewPidWithName(name string) *Pid {
+	return &Pid{
+		Name: name,
+	}
+}
+func ValidPid(pid *Pid) bool {
+	if pid == nil {
+		return false
+	}
+	if pid.GetUniqId() > 0 {
+		return true
+	}
+	if pid.GetName() != "" {
+		return true
+	}
+	return false
+}
+func (p *Pid) GetNodeId() uint64 {
+	return p.NodeId
+}
+func (p *Pid) GetUniqId() uint64 {
+	return p.UniqId
+}
+func (p *Pid) String() string {
+	if p == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v.%v", p.NodeId, p.UniqId)
+}
+func (p *Pid) GetName() string {
+	return p.Name
 }

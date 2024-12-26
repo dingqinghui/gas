@@ -75,6 +75,10 @@ func IsOk(err *Error) bool {
 	return err == nil || err.Id == 0
 }
 
+func IsFail(err *Error) bool {
+	return err != nil && err.Id != 0
+}
+
 func Assert(err *Error) {
 	if IsOk(err) {
 		return

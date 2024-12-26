@@ -64,6 +64,6 @@ func RunChatNode(path string) {
 	chatNode := node.New(path)
 
 	chatNode.Run()
-	_, _ = chatNode.System().SpawnWithName("chat", func() api.IActor { return new(Service) }, nil)
+	_, _ = chatNode.System().Spawn(func() api.IActor { return new(Service) }, api.WithActorName("chat"))
 	chatNode.Wait()
 }
