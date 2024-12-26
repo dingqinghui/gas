@@ -24,7 +24,7 @@ type (
 
 	NetPacketType byte
 
-	NetRouterFunc func(session *Session, msg *NetworkMessage) *Error
+	NetRouterFunc func(session *Session, msg *NetworkMessage) (*Pid, string, *Error)
 
 	NetworkPacket struct {
 		Type NetPacketType

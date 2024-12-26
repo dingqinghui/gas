@@ -24,7 +24,7 @@ type baseActorContext struct {
 	router     api.IActorRouter
 	pid        *api.Pid
 	initParams interface{}
-	events     map[string]struct{}
+	groups     map[string]struct{}
 }
 
 var _ api.IActorContext = &baseActorContext{}
@@ -32,7 +32,7 @@ var _ api.IActorMessageInvoker = &baseActorContext{}
 
 func NewBaseActorContext() *baseActorContext {
 	ctx := new(baseActorContext)
-	ctx.events = make(map[string]struct{})
+	ctx.groups = make(map[string]struct{})
 	return ctx
 }
 
@@ -175,23 +175,23 @@ func (a *baseActorContext) Push(session *api.Session, mid uint16, s2c interface{
 	}
 }
 
-func (a *baseActorContext) RegisterEvent(eventName string) {
-	a.System().EventBus().Register(eventName, a.Process())
-	a.events[eventName] = struct{}{}
+func (a *baseActorContext) AddGroup(name string) {
+	a.System().Group().Add(name, a.Process())
+	a.groups[name] = struct{}{}
 }
 
-func (a *baseActorContext) UnRegisterEvent(eventName string) {
-	a.System().EventBus().UnRegister(eventName, a.Self())
-	delete(a.events, eventName)
+func (a *baseActorContext) RemoveGroup(name string) {
+	a.System().Group().Remove(name, a.Self())
+	delete(a.groups, name)
 }
 
-func (a *baseActorContext) NotifyEvent(eventName string, msg interface{}) *api.Error {
-	return a.System().EventBus().Notify(eventName, a.Self(), msg)
+func (a *baseActorContext) BroadcastGroup(name string, msg interface{}) *api.Error {
+	return a.System().Group().Broadcast(name, a.Self(), msg)
 }
 
 func (a *baseActorContext) OnStop() *api.Error {
-	for event, _ := range a.events {
-		a.UnRegisterEvent(event)
+	for event, _ := range a.groups {
+		a.RemoveGroup(event)
 	}
 	if a.name != "" {
 		_, _ = a.System().UnregisterName(a.name)

@@ -9,6 +9,7 @@
 package rpc
 
 import (
+	"fmt"
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/serializer"
 	"github.com/dingqinghui/gas/zlog"
@@ -20,10 +21,10 @@ import (
 func New(node api.INode, msgque api.IRpcMessageQue) api.IRpc {
 	r := new(Rpc)
 	r.SetNode(node)
-	r.msgque = msgque
-	r.serializer = serializer.Json
 	r.Init()
 	node.AddModule(r)
+	r.msgque = msgque
+	r.serializer = serializer.Json
 	return r
 }
 
@@ -34,25 +35,41 @@ type Rpc struct {
 }
 
 func (r *Rpc) Run() {
-	nodeId := r.Node().GetID()
-	// 订阅本节点topic
-	topic := genTopic(nodeId)
-	r.msgque.Subscribe(topic, func(subj string, data []byte, respondFun api.RpcRespondHandler) {
+
+	process := func(subj string, data []byte, respondFun api.RpcRespondHandler) {
 		if err := r.process(data, respondFun); err != nil {
 			zlog.Error("rpc process", zap.Error(err))
 			return
 		}
-	})
+	}
+	// 订阅本节点topic
+	topic := r.genNodeTopic(r.Node().GetID())
+	r.msgque.Subscribe(topic, process)
+
+	// 订阅广播组
+	for _, tag := range r.Node().GetTags() {
+		topic = fmt.Sprintf("broadcast.tag.%s", tag)
+		r.msgque.Subscribe(topic, process)
+	}
 	zlog.Info("rpc subscribe", zap.String("topic", topic))
 }
 
+func (r *Rpc) Broadcast(service string, message *api.ActorMessage) *api.Error {
+	topic := r.genBroadcastTopic(service)
+	return r.send(topic, message)
+}
+
 func (r *Rpc) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
+	return r.send(r.genNodeTopic(to.GetNodeId()), message)
+}
+
+func (r *Rpc) send(topic string, message *api.ActorMessage) *api.Error {
 	buf, err := r.serializer.Marshal(message)
 	if err != nil {
 		zlog.Error("rpc marshal request err", zap.Error(err))
 		return api.ErrJsonPack
 	}
-	return r.msgque.Send(genTopic(to.GetNodeId()), buf)
+	return r.msgque.Send(topic, buf)
 }
 
 func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.ActorMessage) (rsp *api.RespondMessage) {
@@ -63,7 +80,7 @@ func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.ActorMessage
 		rsp.Err = api.ErrJsonPack
 		return
 	}
-	rspData, err := r.msgque.Call(genTopic(to.GetNodeId()), data, timeout)
+	rspData, err := r.msgque.Call(r.genNodeTopic(to.GetNodeId()), data, timeout)
 	if err != nil {
 		zlog.Error("rpc call  err", zap.Error(err))
 		rsp.Err = api.ErrNatsSend
@@ -111,6 +128,10 @@ func (r *Rpc) Stop() *api.Error {
 	return nil
 }
 
-func genTopic(nodeId uint64) string {
+func (r *Rpc) genNodeTopic(nodeId uint64) string {
 	return "node." + convertor.ToString(nodeId)
+}
+
+func (r *Rpc) genBroadcastTopic(service string) string {
+	return fmt.Sprintf("broadcast.tag.%s", service)
 }

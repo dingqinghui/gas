@@ -28,7 +28,7 @@ type System struct {
 	timeout     time.Duration
 	serializer  api.ISerializer
 	routerDict  *maputil.ConcurrentMap[string, api.IActorRouter]
-	eventBus    *EventBus
+	group       *Group
 }
 
 func NewSystem(node api.INode) api.IActorSystem {
@@ -45,7 +45,7 @@ func (s *System) Init() {
 	s.routerDict = maputil.NewConcurrentMap[string, api.IActorRouter](10)
 	s.timeout = time.Second * 1
 	s.serializer = serializer.Json
-	s.eventBus = NewEventBus(s)
+	s.group = NewGroup(s)
 }
 
 func (s *System) Name() string {
@@ -297,6 +297,6 @@ func (s *System) Stop() *api.Error {
 	return nil
 }
 
-func (s *System) EventBus() api.IEventBus {
-	return s.eventBus
+func (s *System) Group() api.IGroup {
+	return s.group
 }

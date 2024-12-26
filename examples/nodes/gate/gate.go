@@ -80,22 +80,18 @@ func HandshakeAuthFunc(entity api.INetEntity, data []byte) ([]byte, *api.Error) 
 
 var routers = network.NewRouters()
 
-func NetRouterFunc(session *api.Session, msg *api.NetworkMessage) *api.Error {
+func NetRouterFunc(session *api.Session, msg *api.NetworkMessage) (*api.Pid, string, *api.Error) {
 	node := session.GetEntity().Node()
 	router := routers.Get(msg.GetID())
 	if router == nil {
-		return api.ErrNetworkRoute
+		return nil, "", api.ErrNetworkRoute
 	}
 	to := session.Agent
 	nodeInfo := session.GetEntity().Node()
 	if !slices.Contains(nodeInfo.GetTags(), router.GetService()) {
 		to = cluster.NewPid(node, "chat", balancer.NewRandom(), nil)
 	}
-	message := api.BuildNetMessage(session, router.GetMethod(), msg)
-	if err := nodeInfo.System().PostMessage(to, message); err != nil {
-		return err
-	}
-	return nil
+	return to, router.GetMethod(), nil
 }
 
 func RunGateNode(path string) {

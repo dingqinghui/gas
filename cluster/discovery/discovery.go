@@ -53,7 +53,7 @@ func (d *discovery) Run() {
 		}
 		topology := d.list.UpdateClusterTopology(nodeDict, waitIndex)
 		if len(topology.Left) != 0 || len(topology.Joined) != 0 {
-			_ = d.Node().System().EventBus().Notify(api.EventUpdateCluster, nil, topology)
+			_ = d.Node().System().Group().Broadcast(api.ClusterUpdateGroup, nil, topology)
 		}
 	}))
 	// add node

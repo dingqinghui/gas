@@ -68,9 +68,9 @@ type (
 		Call(to *Pid, funcName string, request, reply interface{}) *Error
 		Response(session *Session, s2c interface{}) *Error
 		Push(session *Session, mid uint16, s2c interface{}) *Error
-		RegisterEvent(eventName string)
-		UnRegisterEvent(eventName string)
-		NotifyEvent(eventName string, msg interface{}) *Error
+		AddGroup(eventName string)
+		RemoveGroup(eventName string)
+		BroadcastGroup(eventName string, msg interface{}) *Error
 	}
 
 	IProcess interface {
@@ -106,14 +106,14 @@ type (
 		IsLocalPid(pid *Pid) bool
 		SetRouter(name string, router IActorRouter)
 		GetOrSetRouter(actor IActor) IActorRouter
-		EventBus() IEventBus
+		Group() IGroup
 	}
 
-	IEventBus interface {
-		Register(eventName string, process IProcess)
-		UnRegister(eventName string, pid *Pid)
-		Notify(eventName string, from *Pid, msg interface{}) *Error
-		Range(eventName string, f func(IProcess) bool)
+	IGroup interface {
+		Add(name string, process IProcess)
+		Remove(name string, pid *Pid)
+		Broadcast(name string, from *Pid, msg interface{}) *Error
+		Range(name string, f func(IProcess) bool)
 	}
 
 	IActorRouter interface {
