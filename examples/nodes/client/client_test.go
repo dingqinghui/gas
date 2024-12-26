@@ -49,14 +49,13 @@ func TestNetworkClient(t *testing.T) {
 	clientNode.Run()
 	router := network.NewRouters()
 	router.Add(1, &network.Router{
-		NodeType: "client",
-		ActorId:  0,
-		Method:   "Data",
+		Service: "client",
+		ActorId: 0,
+		Method:  "Data",
 	})
 	network.Dial(clientNode, "udp", "127.0.0.1:8454",
 		network.WithAgentProducer(producer),
-		network.WithHandshakeBody(handshakeBody),
-		network.WithRouter(router))
+		network.WithHandshakeBody(handshakeBody))
 
 	clientNode.Wait()
 }

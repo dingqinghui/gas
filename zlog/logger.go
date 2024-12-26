@@ -125,9 +125,15 @@ func Fatal(msg string, fields ...zap.Field) {
 	log.logger.Fatal(msg, fields...)
 }
 func SetLogLevel(logLevel zapcore.Level) {
+	if log == nil {
+		return
+	}
 	log.loglevel.SetLevel(logLevel)
 }
 
 func GetLevel() zapcore.Level {
+	if log == nil {
+		return zapcore.DebugLevel
+	}
 	return log.loglevel.Level()
 }

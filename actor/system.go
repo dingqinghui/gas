@@ -144,6 +144,9 @@ func (s *System) Spawn(producer api.ActorProducer, params interface{}, opts ...a
 }
 
 func (s *System) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
+	if to == nil {
+		return api.ErrInvalidPid
+	}
 	if !api.ValidPid(to) {
 		return api.ErrInvalidPid
 	}
