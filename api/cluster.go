@@ -34,7 +34,7 @@ type (
 		SetSerializer(serializer ISerializer)
 		Call(to *Pid, timeout time.Duration, message *ActorMessage) (rsp *RespondMessage)
 		PostMessage(to *Pid, message *ActorMessage) *Error
-		Broadcast(service string, message *ActorMessage) *Error
+		Broadcast(message *ActorMessage) *Error
 	}
 
 	IDiscovery interface {

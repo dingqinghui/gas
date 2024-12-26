@@ -17,6 +17,7 @@ import (
 const (
 	ActorNetMessage = iota
 	ActorInnerMessage
+	ActorBroadcastMessage
 )
 
 type (
@@ -173,6 +174,9 @@ func (m *ActorMessage) Respond(rsp *RespondMessage) *Error {
 func (m *ActorMessage) SetRespond(respond RespondFun) {
 	m.respond = respond
 }
+func (m *ActorMessage) IsBroadcast() bool {
+	return m.Typ == ActorBroadcastMessage
+}
 
 func BuildNetMessage(session *Session, methodName string, msg *NetworkMessage) *ActorMessage {
 	return &ActorMessage{
@@ -187,6 +191,16 @@ func BuildInnerMessage(from, to *Pid, methodName string, data []byte) *ActorMess
 	return &ActorMessage{
 		From:       from,
 		To:         to,
+		Typ:        ActorInnerMessage,
+		MethodName: methodName,
+		Data:       data,
+	}
+}
+
+func BuildBroadMessage(from *Pid, service string, methodName string, data []byte) *ActorMessage {
+	return &ActorMessage{
+		From:       from,
+		To:         NewRemotePid(0, service),
 		Typ:        ActorInnerMessage,
 		MethodName: methodName,
 		Data:       data,

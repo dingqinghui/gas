@@ -69,6 +69,7 @@ var (
 	ErrNetworkRespond         = NewErr("network respond err", 29)
 	ErrNatsRespond            = NewErr("nats respond err", 30)
 	ErrActorRouterIsNil       = NewErr("actor router is nil", 31)
+	ErrInvalidActorMessage    = NewErr("invalid actor message", 32)
 )
 
 func IsOk(err *Error) bool {

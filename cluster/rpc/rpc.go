@@ -54,13 +54,23 @@ func (r *Rpc) Run() {
 	zlog.Info("rpc subscribe", zap.String("topic", topic))
 }
 
-func (r *Rpc) Broadcast(service string, message *api.ActorMessage) *api.Error {
-	topic := r.genBroadcastTopic(service)
+func (r *Rpc) Broadcast(message *api.ActorMessage) *api.Error {
+	if message == nil || message.To == nil {
+		return api.ErrInvalidActorMessage
+	}
+	if !message.IsBroadcast() {
+		return api.ErrInvalidActorMessage
+	}
+	topic := r.genBroadcastTopic(message.To.Name)
 	return r.send(topic, message)
 }
 
 func (r *Rpc) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
-	return r.send(r.genNodeTopic(to.GetNodeId()), message)
+	topic := r.genNodeTopic(to.GetNodeId())
+	if message.IsBroadcast() {
+		return api.ErrInvalidActorMessage
+	}
+	return r.send(topic, message)
 }
 
 func (r *Rpc) send(topic string, message *api.ActorMessage) *api.Error {

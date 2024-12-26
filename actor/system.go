@@ -147,7 +147,7 @@ func (s *System) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error 
 	if !api.ValidPid(to) {
 		return api.ErrInvalidPid
 	}
-	if s.IsLocalPid(to) {
+	if s.IsLocalPid(to) || message.IsBroadcast() {
 		process := s.Find(to)
 		if process == nil {
 			return api.ErrProcessNotExist
