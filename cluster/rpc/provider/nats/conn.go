@@ -64,7 +64,7 @@ func (c *Conn) Call(topic string, data []byte, timeout time.Duration) ([]byte, e
 		zlog.Error("nats request", zap.String("subj", topic), zap.Error(err))
 		return nil, err
 	}
-	zlog.Info("nats request", zap.String("topic", topic))
+	zlog.Debug("nats request", zap.String("topic", topic))
 	return msg.Data, err
 }
 
@@ -83,8 +83,8 @@ func (c *Conn) Send(topic string, data []byte) *api.Error {
 	return nil
 }
 
-func (c *Conn) Subscribe(subject string, process api.RpcProcessHandler) {
-	_, chanErr := c.rawCon.ChanSubscribe(subject, c.msgChan)
+func (c *Conn) Subscribe(topic string, process api.RpcProcessHandler) {
+	_, chanErr := c.rawCon.ChanSubscribe(topic, c.msgChan)
 	if chanErr != nil {
 		zlog.Error("nats chan subscribe error", zap.Error(chanErr))
 		return
@@ -107,6 +107,8 @@ func (c *Conn) Subscribe(subject string, process api.RpcProcessHandler) {
 	}, func(err interface{}) {
 		zlog.Panic("nats process panic", zap.Error(err.(error)))
 	})
+
+	zlog.Info("nats subscribe topic", zap.String("topic", topic))
 }
 
 func (c *Conn) Stop() *api.Error {

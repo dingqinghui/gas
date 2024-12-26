@@ -48,10 +48,9 @@ func (r *Rpc) Run() {
 
 	// 订阅广播组
 	for _, tag := range r.Node().GetTags() {
-		topic = fmt.Sprintf("broadcast.tag.%s", tag)
+		topic = r.genBroadcastTopic(tag)
 		r.msgque.Subscribe(topic, process)
 	}
-	zlog.Info("rpc subscribe", zap.String("topic", topic))
 }
 
 func (r *Rpc) Broadcast(message *api.ActorMessage) *api.Error {
@@ -127,6 +126,14 @@ func (r *Rpc) SetSerializer(serializer api.ISerializer) {
 	r.serializer = serializer
 }
 
+func (r *Rpc) genNodeTopic(nodeId uint64) string {
+	return "node." + convertor.ToString(nodeId)
+}
+
+func (r *Rpc) genBroadcastTopic(service string) string {
+	return fmt.Sprintf("broadcast.tag.%s", service)
+}
+
 func (r *Rpc) Stop() *api.Error {
 	if err := r.BuiltinStopper.Stop(); err != nil {
 		return err
@@ -136,12 +143,4 @@ func (r *Rpc) Stop() *api.Error {
 	}
 	zlog.Info("rpc module stop")
 	return nil
-}
-
-func (r *Rpc) genNodeTopic(nodeId uint64) string {
-	return "node." + convertor.ToString(nodeId)
-}
-
-func (r *Rpc) genBroadcastTopic(service string) string {
-	return fmt.Sprintf("broadcast.tag.%s", service)
 }
