@@ -25,7 +25,8 @@ type ZLogger struct {
 }
 
 func (z *ZLogger) Init() {
-	z.cfg = initConfig(z.Node())
+
+	z.cfg = initConfig()
 	z.loglevel = zap.NewAtomicLevelAt(z.cfg.getLevel())
 	encoderConfig := zapcore.EncoderConfig{
 		MessageKey:     "M",                                                            // 结构化（json）输出：msg的key
@@ -56,7 +57,7 @@ func (z *ZLogger) Init() {
 		zap.AddCaller(),
 		zap.AddStacktrace(zap.DPanicLevel),
 		zap.AddCallerSkip(1),
-		zap.Fields(zap.String("nodeId", convertor.ToString(z.Node().GetID()))),
+		zap.Fields(zap.String("nodeId", convertor.ToString(api.GetNode().GetID()))),
 	}
 	options = append(options, z.cfg.getZapOption()...)
 	z.logger = zap.New(mulCore, options...)
@@ -76,11 +77,10 @@ func (z *ZLogger) Stop() *api.Error {
 
 var log *ZLogger
 
-func Init(node api.INode) {
+func Init() {
 	log = new(ZLogger)
-	log.SetNode(node)
 	log.Init()
-	node.AddModule(log)
+	api.GetNode().AddModule(log)
 }
 
 func Debug(msg string, fields ...zap.Field) {

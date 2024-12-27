@@ -10,7 +10,8 @@ package nats
 
 import "github.com/dingqinghui/gas/api"
 
-func initConfig(node api.INode) *config {
+func initConfig() *config {
+	node := api.GetNode()
 	c := new(config)
 	vp := node.GetViper().Sub("cluster.nats")
 	c.urls = vp.GetString("urls")

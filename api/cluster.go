@@ -31,10 +31,9 @@ type (
 	}
 	IRpc interface {
 		IModule
-		SetSerializer(serializer ISerializer)
-		Call(to *Pid, timeout time.Duration, message *ActorMessage) (rsp *RespondMessage)
-		PostMessage(to *Pid, message *ActorMessage) *Error
-		Broadcast(message *ActorMessage) *Error
+		Call(to *Pid, timeout time.Duration, message *Message) (rsp *RespondMessage)
+		PostMessage(to *Pid, message *Message) *Error
+		Broadcast(message *Message) *Error
 	}
 
 	IDiscovery interface {
@@ -61,37 +60,10 @@ type (
 		NewPid(service string, lb IBalancer, user interface{}) *Pid
 	}
 
-	NodeList struct {
-		Dict        map[uint64]*BaseNode
-		LastEventId uint64
+	Topology struct {
+		All    []INodeBase
+		Alive  []INodeBase
+		Joined []INodeBase
+		Left   []INodeBase
 	}
 )
-
-func NewNodeList() *NodeList {
-	return &NodeList{
-		Dict: make(map[uint64]*BaseNode),
-	}
-}
-
-func (m *NodeList) UpdateClusterTopology(nodeDict map[uint64]*BaseNode, lastEventId uint64) *Topology {
-	topology := &Topology{}
-	if m.LastEventId >= lastEventId {
-		return topology
-	}
-	for _, node := range nodeDict {
-		if _, ok := m.Dict[node.GetID()]; ok {
-			topology.Alive = append(topology.Alive, node)
-		} else {
-			topology.Joined = append(topology.Joined, node)
-		}
-		topology.All = append(topology.All, node)
-	}
-	for id := range m.Dict {
-		if _, ok := nodeDict[id]; !ok {
-			topology.Left = append(topology.Left, m.Dict[id])
-		}
-	}
-	m.Dict = nodeDict
-	m.LastEventId = lastEventId
-	return topology
-}

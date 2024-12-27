@@ -189,7 +189,6 @@ func (b *builtinServer) Init() {
 	xerror.Assert(err)
 	b.proto = proto
 	b.addr = addr
-	b.SetNode(b.node)
 }
 func (b *builtinServer) OnBoot(eng gnet.Engine) (action gnet.Action) {
 	b.eng = eng
@@ -204,7 +203,7 @@ func (b *builtinServer) Stop() *api.Error {
 	return nil
 }
 func (b *builtinServer) run(handler gnet.EventHandler) {
-	b.Node().Submit(func() {
+	api.GetNode().Submit(func() {
 		xerror.Assert(gnet.Run(handler, b.protoAddr, b.Options().GNetOpts...))
 	}, nil)
 }

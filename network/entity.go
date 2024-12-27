@@ -9,9 +9,10 @@
 package network
 
 import (
-	"errors"
 	"github.com/dingqinghui/gas/api"
-	xerror2 "github.com/dingqinghui/gas/extend/xerror"
+	"github.com/dingqinghui/gas/extend/xerror"
+	"github.com/dingqinghui/gas/network/message"
+	"github.com/dingqinghui/gas/network/packet"
 	"github.com/dingqinghui/gas/zlog"
 	"github.com/panjf2000/gnet/v2"
 	"go.uber.org/zap"
@@ -25,7 +26,6 @@ func newEntity(server api.INetServer, opts *Options, rawCon gnet.Conn) *Entity {
 		id:     autoId.Add(1),
 		server: server,
 		rawCon: rawCon,
-		node:   server.Node(),
 		typ:    server.Typ(),
 		opts:   opts,
 	}
@@ -41,7 +41,7 @@ func newEntity(server api.INetServer, opts *Options, rawCon gnet.Conn) *Entity {
 	}
 
 	if entity.Type() == api.NetConnector {
-		xerror2.Assert(entity.exec(nil))
+		xerror.Assert(entity.exec(nil))
 	}
 
 	zlog.Info("new entity",
@@ -60,7 +60,6 @@ type Entity struct {
 	rawCon            gnet.Conn
 	fsm               IFsmState
 	agentPid          *api.Pid
-	node              api.INode
 	opts              *Options
 	typ               api.NetEntityType
 	network           string
@@ -75,16 +74,16 @@ func (s *Entity) ID() uint64 {
 }
 
 func (s *Entity) Traffic(c gnet.Conn) error {
-	packets := packCodec.Decode(c)
-	for _, packet := range packets {
-		if err := s.exec(packet); err != nil {
+	packets := packet.Decode(c)
+	for _, pkt := range packets {
+		if err := s.exec(pkt); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Entity) exec(packet api.INetPacket) error {
+func (s *Entity) exec(packet *packet.NetworkPacket) error {
 	if err := s.fsm.Exec(packet); err != nil {
 		zlog.Error("entity exec err",
 			zap.Uint64("entityId", s.ID()), zap.Error(err))
@@ -106,7 +105,8 @@ func (s *Entity) exec(packet api.INetPacket) error {
 
 func (s *Entity) spawnAgent() *api.Error {
 	s.session = api.NewSession(s)
-	pid, err := s.node.System().Spawn(s.opts.AgentProducer, s)
+
+	pid, err := api.GetNode().System().Spawn(s.opts.AgentProducer, s)
 	if err != nil {
 		zlog.Error("entity spawn agent err",
 			zap.Uint64("entityId", s.ID()), zap.Error(err))
@@ -119,13 +119,14 @@ func (s *Entity) spawnAgent() *api.Error {
 		return api.ErrPidIsNil
 	}
 	s.agentPid = pid
+	s.session.Agent = s.agentPid
 	zlog.Info("entity spawn agent",
 		zap.Uint64("entityId", s.ID()), zap.String("agent", pid.String()))
 	return nil
 }
 
-func (s *Entity) SendPacket(packet *api.NetworkPacket) *api.Error {
-	buf := packCodec.Encode(packet)
+func (s *Entity) SendRaw(typ packet.Type, data []byte) *api.Error {
+	buf := packet.Encode(typ, data)
 	switch s.Network() {
 	case "tcp":
 		if err := s.rawCon.AsyncWrite(buf, nil); err != nil {
@@ -141,23 +142,54 @@ func (s *Entity) SendPacket(packet *api.NetworkPacket) *api.Error {
 			return api.ErrGNetRaw
 		}
 	}
-	if packet.GetTyp() == PacketTypeKick {
-		zlog.Info("entity send kick packet",
-			zap.Uint64("entityId", s.ID()))
-		return s.Close(errors.New("kick"))
-	}
+
 	zlog.Debug("entity send packet",
-		zap.Uint64("entityId", s.ID()), zap.Any("packet", packet))
+		zap.Uint64("entityId", s.ID()), zap.Any("typ", typ), zap.String("data", string(data)))
 	return nil
 }
 
-func (s *Entity) SendMessage(message *api.NetworkMessage) *api.Error {
-	if message == nil {
-		return nil
-	}
-	data := msgCodec.Encode(message)
-	return s.SendPacket(NewDataPacket(data))
+func (s *Entity) SendMessage(msg *message.Message) *api.Error {
+	data := message.Encode(msg)
+	return s.SendRaw(packet.DataType, data)
 }
+
+//func (s *Entity) ResponseErr(session api.Session, err *api.Error) *api.Error {
+//	m := message.New()
+//	m.Copy(session.Message)
+//	m.Error = err.Id
+//	data := message.Encode(m)
+//	return s.Send(packet.DataType, data)
+//}
+//
+//func (s *Entity) Response(session *api.Session, payload interface{}) *api.Error {
+//	m := message.New()
+//	m.Copy(session.Message)
+//
+//	system := s.Node().System()
+//	body, err := system.Serializer().Marshal(payload)
+//	if err != nil {
+//		return api.ErrMarshal
+//	}
+//	m.Data = body
+//
+//	data := message.Encode(m)
+//	return s.Send(packet.DataType, data)
+//}
+//
+//func (s *Entity) Push(mid uint16, payload interface{}) *api.Error {
+//	m := message.New()
+//	m.ID = mid
+//
+//	system := s.Node().System()
+//	body, err := system.Serializer().Marshal(payload)
+//	if err != nil {
+//		return api.ErrMarshal
+//	}
+//	m.Data = body
+//
+//	data := message.Encode(m)
+//	return s.Send(packet.DataType, data)
+//}
 
 func (s *Entity) Type() api.NetEntityType {
 	return s.typ
@@ -166,7 +198,7 @@ func (s *Entity) Network() string {
 	return s.network
 }
 
-func (s *Entity) Close(reason error) *api.Error {
+func (s *Entity) Close(reason *api.Error) *api.Error {
 	if err := s.BuiltinStopper.Stop(); err != nil {
 		zlog.Error("entity close", zap.Uint64("id", s.ID()), zap.Error(err))
 		return err
@@ -186,16 +218,13 @@ func (s *Entity) Close(reason error) *api.Error {
 
 func (s *Entity) Closed(err error) *api.Error {
 	if s.agentPid != nil {
-		if wrong := s.node.System().Send(nil, s.agentPid, "Closed", nil); wrong != nil {
+		if wrong := api.GetNode().System().Send(nil, s.agentPid, "Closed", nil); wrong != nil {
 			zlog.Error("entity closed", zap.Uint64("id", s.ID()), zap.Error(err))
 			return wrong
 		}
 	}
 	zlog.Info("entity closed", zap.Uint64("id", s.ID()), zap.Error(err))
 	return nil
-}
-func (s *Entity) Node() api.INode {
-	return s.node
 }
 
 func (s *Entity) LocalAddr() string {
@@ -214,4 +243,13 @@ func (s *Entity) GetAgent() *api.Pid {
 
 func (s *Entity) Session() *api.Session {
 	return s.session
+}
+
+func (s *Entity) Kick(reason *api.Error) *api.Error {
+	msg := message.NewErr(reason.Id)
+	data := message.Encode(msg)
+	if err := s.SendRaw(packet.KickType, data); err != nil {
+		return err
+	}
+	return s.Close(reason)
 }

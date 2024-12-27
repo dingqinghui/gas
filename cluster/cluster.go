@@ -8,10 +8,12 @@
 
 package cluster
 
-import "github.com/dingqinghui/gas/api"
+import (
+	"github.com/dingqinghui/gas/api"
+)
 
-func NewPid(node api.INode, service string, lb api.IBalancer, user interface{}) *api.Pid {
-	nodes := node.Discovery().GetByKind(service)
+func NewPid(service string, lb api.IBalancer, user interface{}) *api.Pid {
+	nodes := api.GetNode().Discovery().GetByKind(service)
 	selectNode := lb.Do(nodes, user)
 	if selectNode == nil {
 		return nil

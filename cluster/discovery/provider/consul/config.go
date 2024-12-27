@@ -13,7 +13,8 @@ import (
 	"time"
 )
 
-func initConfig(node api.INode) *config {
+func initConfig() *config {
+	node := api.GetNode()
 	c := new(config)
 	vp := node.GetViper().Sub("cluster.consul")
 	c.address = vp.GetString("address")

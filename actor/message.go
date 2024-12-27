@@ -17,14 +17,14 @@ const (
 	StopFuncName = "OnStop"
 )
 
-func buildInitMessage() *api.ActorMessage {
-	return &api.ActorMessage{
+func buildInitMessage() *api.Message {
+	return &api.Message{
 		MethodName: InitFuncName,
 	}
 }
 
-func buildStopMessage() *api.ActorMessage {
-	return &api.ActorMessage{
+func buildStopMessage() *api.Message {
+	return &api.Message{
 		MethodName: StopFuncName,
 	}
 }

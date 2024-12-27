@@ -18,24 +18,19 @@ import (
 	"time"
 )
 
-func New(node api.INode, msgque api.IRpcMessageQue) api.IRpc {
+func New(msgque api.IRpcMessageQue) api.IRpc {
 	r := new(Rpc)
-	r.SetNode(node)
-	r.Init()
-	node.AddModule(r)
 	r.msgque = msgque
-	r.serializer = serializer.Json
+	api.GetNode().AddModule(r)
 	return r
 }
 
 type Rpc struct {
 	api.BuiltinModule
-	msgque     api.IRpcMessageQue
-	serializer api.ISerializer
+	msgque api.IRpcMessageQue
 }
 
 func (r *Rpc) Run() {
-
 	process := func(subj string, data []byte, respondFun api.RpcRespondHandler) {
 		if err := r.process(data, respondFun); err != nil {
 			zlog.Error("rpc process", zap.Error(err))
@@ -43,17 +38,17 @@ func (r *Rpc) Run() {
 		}
 	}
 	// 订阅本节点topic
-	topic := r.genNodeTopic(r.Node().GetID())
+	topic := r.genNodeTopic(api.GetNode().GetID())
 	r.msgque.Subscribe(topic, process)
 
 	// 订阅广播组
-	for _, tag := range r.Node().GetTags() {
+	for _, tag := range api.GetNode().GetTags() {
 		topic = r.genBroadcastTopic(tag)
 		r.msgque.Subscribe(topic, process)
 	}
 }
 
-func (r *Rpc) Broadcast(message *api.ActorMessage) *api.Error {
+func (r *Rpc) Broadcast(message *api.Message) *api.Error {
 	if message == nil || message.To == nil {
 		return api.ErrInvalidActorMessage
 	}
@@ -64,7 +59,7 @@ func (r *Rpc) Broadcast(message *api.ActorMessage) *api.Error {
 	return r.send(topic, message)
 }
 
-func (r *Rpc) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
+func (r *Rpc) PostMessage(to *api.Pid, message *api.Message) *api.Error {
 	topic := r.genNodeTopic(to.GetNodeId())
 	if message.IsBroadcast() {
 		return api.ErrInvalidActorMessage
@@ -72,8 +67,8 @@ func (r *Rpc) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
 	return r.send(topic, message)
 }
 
-func (r *Rpc) send(topic string, message *api.ActorMessage) *api.Error {
-	buf, err := r.serializer.Marshal(message)
+func (r *Rpc) send(topic string, message *api.Message) *api.Error {
+	buf, err := api.GetNode().Serializer().Marshal(message)
 	if err != nil {
 		zlog.Error("rpc marshal request err", zap.Error(err))
 		return api.ErrJsonPack
@@ -81,9 +76,9 @@ func (r *Rpc) send(topic string, message *api.ActorMessage) *api.Error {
 	return r.msgque.Send(topic, buf)
 }
 
-func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.ActorMessage) (rsp *api.RespondMessage) {
+func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.Message) (rsp *api.RespondMessage) {
 	rsp = new(api.RespondMessage)
-	data, err := r.serializer.Marshal(message)
+	data, err := api.GetNode().Serializer().Marshal(message)
 	if err != nil {
 		zlog.Error("rpc marshal request err", zap.Error(err))
 		rsp.Err = api.ErrJsonPack
@@ -105,8 +100,8 @@ func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.ActorMessage
 }
 
 func (r *Rpc) process(data []byte, respond api.RpcRespondHandler) *api.Error {
-	message := new(api.ActorMessage)
-	if err := r.serializer.Unmarshal(data, message); err != nil {
+	message := new(api.Message)
+	if err := api.GetNode().Serializer().Unmarshal(data, message); err != nil {
 		zlog.Error("rpc process  err", zap.Error(err))
 		return api.ErrJsonUnPack
 	}
@@ -119,11 +114,7 @@ func (r *Rpc) process(data []byte, respond api.RpcRespondHandler) *api.Error {
 			return respond(rspData)
 		})
 	}
-	return r.Node().System().PostMessage(message.To, message)
-}
-
-func (r *Rpc) SetSerializer(serializer api.ISerializer) {
-	r.serializer = serializer
+	return api.GetNode().System().PostMessage(message.To, message)
 }
 
 func (r *Rpc) genNodeTopic(nodeId uint64) string {

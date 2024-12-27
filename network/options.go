@@ -11,12 +11,14 @@ package network
 import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/serializer"
+	"github.com/dingqinghui/gas/network/message"
 	"github.com/panjf2000/gnet/v2"
 	"time"
 )
 
 type Option func(*Options)
 type HandshakeAuthFunc func(session api.INetEntity, data []byte) ([]byte, *api.Error)
+type RouterFunc func(session *api.Session, msg *message.Message) (*api.Pid, string, *api.Error)
 
 func loadOptions(options ...Option) *Options {
 	opts := defaultOptions()
@@ -47,12 +49,12 @@ type Options struct {
 	HandshakeAuth    HandshakeAuthFunc
 	HandshakeBody    []byte
 	GNetOpts         []gnet.Option
-	RouterHandler    api.NetRouterFunc
+	RouterHandler    RouterFunc
 	Serializer       api.ISerializer
 	HeartBeatTimeout time.Duration
 }
 
-func WithRouterHandler(routerHandler api.NetRouterFunc) Option {
+func WithRouterHandler(routerHandler RouterFunc) Option {
 	return func(op *Options) {
 		op.RouterHandler = routerHandler
 	}

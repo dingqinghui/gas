@@ -20,7 +20,7 @@ type baseActorContext struct {
 	actor      api.IActor
 	process    api.IProcess
 	system     api.IActorSystem
-	mbm        *api.ActorMessage
+	mbm        *api.Message
 	router     api.IActorRouter
 	pid        *api.Pid
 	initParams interface{}
@@ -41,7 +41,7 @@ func (a *baseActorContext) Name() string {
 }
 
 func (a *baseActorContext) InvokerMessage(msg interface{}) *api.Error {
-	a.mbm = msg.(*api.ActorMessage)
+	a.mbm = msg.(*api.Message)
 	if err := a.invokerMessage(a.mbm); err != nil {
 		zlog.Error("actor处理消息失败",
 			zap.String("name", reflectx.TypeFullName(a.Actor())),
@@ -52,7 +52,7 @@ func (a *baseActorContext) InvokerMessage(msg interface{}) *api.Error {
 	return nil
 }
 
-func (a *baseActorContext) invokerMessage(msg *api.ActorMessage) *api.Error {
+func (a *baseActorContext) invokerMessage(msg *api.Message) *api.Error {
 
 	switch msg.MethodName {
 	case InitFuncName:
@@ -70,7 +70,7 @@ func (a *baseActorContext) invokerMessage(msg *api.ActorMessage) *api.Error {
 	return nil
 }
 
-func (a *baseActorContext) invokerNetMessage(msg *api.ActorMessage) *api.Error {
+func (a *baseActorContext) invokerNetMessage(msg *api.Message) *api.Error {
 	if a.router == nil {
 		return api.ErrActorRouterIsNil
 	}
@@ -78,12 +78,12 @@ func (a *baseActorContext) invokerNetMessage(msg *api.ActorMessage) *api.Error {
 	if md == nil {
 		return api.ErrActorNotMethod
 	}
-	msg.Session.Mid = msg.Mid
+	msg.Session.SetContext(a)
 	method := &networkMethod{md}
 	return method.call(a, msg)
 }
 
-func (a *baseActorContext) invokerInnerMessage(msg *api.ActorMessage) *api.Error {
+func (a *baseActorContext) invokerInnerMessage(msg *api.Message) *api.Error {
 	if a.router == nil {
 		return api.ErrActorRouterIsNil
 	}
@@ -99,7 +99,7 @@ func (a *baseActorContext) invokerInnerMessage(msg *api.ActorMessage) *api.Error
 	return msg.Respond(rsq)
 }
 
-func (a *baseActorContext) Message() *api.ActorMessage {
+func (a *baseActorContext) Message() *api.Message {
 	return a.mbm
 }
 
@@ -145,35 +145,35 @@ func (a *baseActorContext) Call(to *api.Pid, funcName string, request, reply int
 	return a.System().Call(a.Self(), to, funcName, request, reply)
 }
 
-func (a *baseActorContext) Response(session *api.Session, s2c interface{}) *api.Error {
-	return a.Push(session, session.Mid, s2c)
-}
-
-func (a *baseActorContext) Push(session *api.Session, mid uint16, s2c interface{}) *api.Error {
-	if a.Message().Typ != api.ActorNetMessage {
-		return api.ErrNetworkRespond
-	}
-	data, err := a.System().Serializer().Marshal(s2c)
-	if err != nil {
-		return api.ErrMarshal
-	}
-	if a.System().IsLocalPid(session.Agent) {
-		entity := session.GetEntity()
-		if entity == nil {
-			return api.ErrNetworkRespond
-		}
-		message := api.NewNetworkMessage(mid, data)
-		return entity.SendMessage(message)
-	} else {
-		netMessage := api.NewNetworkMessage(mid, data)
-		mData, wrong := a.System().Serializer().Marshal(netMessage)
-		if wrong != nil {
-			return api.ErrMarshal
-		}
-		message := api.BuildInnerMessage(a.Self(), session.Agent, "Push", mData)
-		return a.System().PostMessage(session.Agent, message)
-	}
-}
+//func (a *baseActorContext) Response(session *api.Session, s2c interface{}) *api.Error {
+//	return a.Push(session, session.Mid, s2c)
+//}
+//
+//func (a *baseActorContext) Push(session *api.Session, mid uint16, s2c interface{}) *api.Error {
+//	if a.Message().Typ != api.ActorNetMessage {
+//		return api.ErrNetworkRespond
+//	}
+//	data, err := a.System().Serializer().Marshal(s2c)
+//	if err != nil {
+//		return api.ErrMarshal
+//	}
+//	if a.System().IsLocalPid(session.Agent) {
+//		entity := session.GetEntity()
+//		if entity == nil {
+//			return api.ErrNetworkRespond
+//		}
+//		message := api.NewNetworkMessage(mid, data)
+//		return entity.SendMessage(message)
+//	} else {
+//		netMessage := api.NewNetworkMessage(mid, data)
+//		mData, wrong := a.System().Serializer().Marshal(netMessage)
+//		if wrong != nil {
+//			return api.ErrMarshal
+//		}
+//		message := api.BuildInnerMessage(a.Self(), session.Agent, "Push", mData)
+//		return a.System().PostMessage(session.Agent, message)
+//	}
+//}
 
 func (a *baseActorContext) AddGroup(name string) {
 	a.System().Group().Add(name, a.Process())

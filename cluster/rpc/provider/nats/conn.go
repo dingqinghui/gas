@@ -16,9 +16,8 @@ import (
 	"time"
 )
 
-func New(node api.INode) api.IRpcMessageQue {
+func New() api.IRpcMessageQue {
 	c := new(Conn)
-	c.SetNode(node)
 	c.Init()
 	return c
 }
@@ -35,7 +34,7 @@ func (c *Conn) Name() string {
 }
 
 func (c *Conn) Init() {
-	c.cfg = initConfig(c.Node())
+	c.cfg = initConfig()
 	c.msgChan = make(chan *nats.Msg, c.cfg.recChanSize)
 	c.connect()
 }
@@ -89,7 +88,7 @@ func (c *Conn) Subscribe(topic string, process api.RpcProcessHandler) {
 		zlog.Error("nats chan subscribe error", zap.Error(chanErr))
 		return
 	}
-	c.Node().Submit(func() {
+	api.GetNode().Submit(func() {
 		for msg := range c.msgChan {
 			respond := func(data []byte) *api.Error {
 				if err := msg.Respond(data); err != nil {

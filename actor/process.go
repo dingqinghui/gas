@@ -42,14 +42,14 @@ func (p *ProcessActor) valid() *api.Error {
 	return nil
 }
 
-func (p *ProcessActor) PostMessage(message *api.ActorMessage) *api.Error {
+func (p *ProcessActor) PostMessage(message *api.Message) *api.Error {
 	if err := p.valid(); err != nil {
 		return err
 	}
 	return p.mailbox.PostMessage(message)
 }
 
-func (p *ProcessActor) PostMessageAndWait(message *api.ActorMessage) (rsp *api.RespondMessage) {
+func (p *ProcessActor) PostMessageAndWait(message *api.Message) (rsp *api.RespondMessage) {
 	rsp = new(api.RespondMessage)
 	if err := p.valid(); err != nil {
 		rsp.Err = err

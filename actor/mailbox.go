@@ -27,16 +27,14 @@ type mailbox struct {
 	queue         *mpsc.Queue
 	dispatch      api.IActorDispatcher
 	dispatchStat  atomic.Int32
-	node          api.INode
 	inCnt, outCnt atomic.Uint64
 }
 
 var _ api.IActorMailbox = &mailbox{}
 
-func NewMailbox(node api.INode) *mailbox {
+func NewMailbox() *mailbox {
 	m := &mailbox{
 		queue: mpsc.NewQueue(),
-		node:  node,
 	}
 	return m
 }
@@ -59,7 +57,7 @@ func (m *mailbox) schedule() *api.Error {
 	if !m.dispatchStat.CompareAndSwap(idle, running) {
 		return nil
 	}
-	if err := m.dispatch.Schedule(m.node, m.process, func(err interface{}) {
+	if err := m.dispatch.Schedule(m.process, func(err interface{}) {
 		//_ = m.invoker.InvokerMessage(NewMailBoxMessage(PanicFuncName, nil, err))
 	}); err != nil {
 		return err

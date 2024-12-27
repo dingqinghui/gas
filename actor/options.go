@@ -27,9 +27,9 @@ func getDispatcher(b *api.ActorProcessOptions) api.IActorDispatcher {
 	return b.Dispatcher
 }
 
-func getMailBox(node api.INode, b *api.ActorProcessOptions) api.IActorMailbox {
+func getMailBox(b *api.ActorProcessOptions) api.IActorMailbox {
 	if b.Mailbox == nil {
-		b.Mailbox = NewMailbox(node)
+		b.Mailbox = NewMailbox()
 	}
 	return b.Mailbox
 }

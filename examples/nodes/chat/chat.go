@@ -50,20 +50,20 @@ func (c *Service) Chat(session *api.Session, message *common.ClientMessage) *api
 	zlog.Info("ChatService Chat", zap.Any("message", message), zap.Any("message", c.Ctx.Message().From))
 	message.Content = "111111111111111"
 	// push to client
-	if err := c.Ctx.Push(session, 2, message); err != nil {
+	if err := session.Push(2, message); err != nil {
 		return err
 	}
 	// respond to client
-	if err := c.Ctx.Response(session, message); err != nil {
+	if err := session.Response(message); err != nil {
 		return err
 	}
 	return nil
 }
 
 func RunChatNode(path string) {
-	chatNode := node.New(path)
+	node.New(path)
 
-	chatNode.Run()
-	_, _ = chatNode.System().Spawn(func() api.IActor { return new(Service) }, api.WithActorName("chat"))
-	chatNode.Wait()
+	api.GetNode().Run()
+	_, _ = api.GetNode().System().Spawn(func() api.IActor { return new(Service) }, nil, api.WithActorName("chat"))
+	api.GetNode().Wait()
 }

@@ -16,14 +16,14 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func New(node api.INode, clusterName string, provider api.IDiscoveryProvider) api.IDiscovery {
+func New(clusterName string, provider api.IDiscoveryProvider) api.IDiscovery {
 	d := new(discovery)
+	api.GetNode().AddModule(d)
+
 	xerror.NilAssert(provider)
 	d.provider = provider
 	d.clusterName = clusterName
-	d.SetNode(node)
 	d.Init()
-	node.AddModule(d)
 	return d
 }
 
@@ -31,11 +31,11 @@ type discovery struct {
 	api.BuiltinModule
 	provider    api.IDiscoveryProvider
 	clusterName string
-	list        *api.NodeList
+	list        *NodeList
 }
 
 func (d *discovery) Init() {
-	d.list = api.NewNodeList()
+	d.list = NewNodeList()
 }
 
 func (d *discovery) Name() string {
@@ -53,11 +53,11 @@ func (d *discovery) Run() {
 		}
 		topology := d.list.UpdateClusterTopology(nodeDict, waitIndex)
 		if len(topology.Left) != 0 || len(topology.Joined) != 0 {
-			_ = d.Node().System().Group().Broadcast(api.ClusterUpdateGroup, nil, topology)
+			_ = api.GetNode().System().Group().Broadcast(api.ClusterUpdateGroup, nil, topology)
 		}
 	}))
 	// add node
-	api.Assert(d.AddNode(d.Node().Base()))
+	api.Assert(d.AddNode(api.GetNode().Base()))
 }
 
 func (d *discovery) GetById(nodeId uint64) api.INodeBase {
@@ -99,7 +99,7 @@ func (d *discovery) Stop() *api.Error {
 	if err := d.BuiltinStopper.Stop(); err != nil {
 		return err
 	}
-	if err := d.RemoveNode(convertor.ToString(d.Node().GetID())); err != nil {
+	if err := d.RemoveNode(convertor.ToString(api.GetNode().GetID())); err != nil {
 		return err
 	}
 	if d.provider != nil {

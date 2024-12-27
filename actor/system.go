@@ -12,7 +12,6 @@ import (
 	"github.com/dingqinghui/gas/api"
 	"github.com/dingqinghui/gas/extend/asynctime"
 	"github.com/dingqinghui/gas/extend/reflectx"
-	"github.com/dingqinghui/gas/extend/serializer"
 	"github.com/dingqinghui/gas/zlog"
 	"github.com/duke-git/lancet/v2/maputil"
 	"go.uber.org/zap"
@@ -26,16 +25,13 @@ type System struct {
 	nameDict    *maputil.ConcurrentMap[string, *api.Pid]
 	processDict *maputil.ConcurrentMap[uint64, api.IProcess]
 	timeout     time.Duration
-	serializer  api.ISerializer
 	routerDict  *maputil.ConcurrentMap[string, api.IActorRouter]
 	group       *Group
 }
 
-func NewSystem(node api.INode) api.IActorSystem {
+func NewSystem() api.IActorSystem {
 	s := new(System)
-	s.SetNode(node)
-	s.Init()
-	node.AddModule(s)
+	api.GetNode().AddModule(s)
 	return s
 }
 
@@ -44,7 +40,6 @@ func (s *System) Init() {
 	s.processDict = maputil.NewConcurrentMap[uint64, api.IProcess](10)
 	s.routerDict = maputil.NewConcurrentMap[string, api.IActorRouter](10)
 	s.timeout = time.Second * 1
-	s.serializer = serializer.Json
 	s.group = NewGroup(s)
 }
 
@@ -71,18 +66,12 @@ func (s *System) Timeout() time.Duration {
 func (s *System) SetTimeout(timeout time.Duration) {
 	s.timeout = timeout
 }
-func (s *System) SetSerializer(serializer api.ISerializer) {
-	s.serializer = serializer
-}
-func (s *System) Serializer() api.ISerializer {
-	return s.serializer
-}
 
 func (s *System) Find(pid *api.Pid) api.IProcess {
 	if pid == nil {
 		return nil
 	}
-	if pid.GetNodeId() != s.Node().GetID() {
+	if pid.GetNodeId() != api.GetNode().GetID() {
 		return nil
 	}
 	if pid.GetUniqId() > 0 {
@@ -143,7 +132,7 @@ func (s *System) Spawn(producer api.ActorProducer, params interface{}, opts ...a
 	return pid, nil
 }
 
-func (s *System) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error {
+func (s *System) PostMessage(to *api.Pid, message *api.Message) *api.Error {
 	if to == nil {
 		return api.ErrInvalidPid
 	}
@@ -157,12 +146,12 @@ func (s *System) PostMessage(to *api.Pid, message *api.ActorMessage) *api.Error 
 		}
 		return process.PostMessage(message)
 	} else {
-		return s.Node().Rpc().PostMessage(to, message)
+		return api.GetNode().Rpc().PostMessage(to, message)
 	}
 }
 
 func (s *System) Send(from, to *api.Pid, funcName string, request interface{}) *api.Error {
-	data, err := s.Serializer().Marshal(request)
+	data, err := api.GetNode().Serializer().Marshal(request)
 	if err != nil {
 		return api.ErrJsonPack
 	}
@@ -174,7 +163,7 @@ func (s *System) Call(from, to *api.Pid, funcName string, request, reply interfa
 	if !api.ValidPid(to) {
 		return api.ErrInvalidPid
 	}
-	requestData, e := s.Serializer().Marshal(request)
+	requestData, e := api.GetNode().Serializer().Marshal(request)
 	if e != nil {
 		zlog.Error("system call", zap.Error(api.ErrJsonPack))
 		return api.ErrJsonPack
@@ -189,7 +178,7 @@ func (s *System) Call(from, to *api.Pid, funcName string, request, reply interfa
 		}
 		rsp = process.PostMessageAndWait(message)
 	} else {
-		rsp = s.Node().Rpc().Call(to, s.timeout, message)
+		rsp = api.GetNode().Rpc().Call(to, s.timeout, message)
 	}
 	if rsp == nil {
 		return nil
@@ -208,26 +197,26 @@ func (s *System) unmarshalRsp(rsp *api.RespondMessage, reply interface{}) *api.E
 	if rsp.Data == nil {
 		return nil
 	}
-	if err := s.Serializer().Unmarshal(rsp.Data, reply); err != nil {
+	if err := api.GetNode().Serializer().Unmarshal(rsp.Data, reply); err != nil {
 		return api.ErrJsonUnPack
 	}
 	return nil
 }
 
 func (s *System) IsLocalPid(pid *api.Pid) bool {
-	return pid.GetNodeId() == s.Node().GetID()
+	return pid.GetNodeId() == api.GetNode().GetID()
 }
 
 func (s *System) NextPid() *api.Pid {
 	return &api.Pid{
-		NodeId: s.Node().GetID(),
+		NodeId: api.GetNode().GetID(),
 		UniqId: s.uniqId.Add(1),
 	}
 }
 
 func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...api.ProcessOption) (api.IProcess, *api.Error) {
 	opt := loadOptions(opts...)
-	mb := getMailBox(s.Node(), opt)
+	mb := getMailBox(opt)
 
 	actor := producer()
 	r := s.GetOrSetRouter(actor)

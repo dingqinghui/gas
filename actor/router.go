@@ -60,14 +60,14 @@ type networkMethod struct {
 	*reflectx.Method
 }
 
-func (m *networkMethod) call(ctx api.IActorContext, msg *api.ActorMessage) *api.Error {
+func (m *networkMethod) call(ctx api.IActorContext, msg *api.Message) *api.Error {
 	if len(m.ArgTypes) != fixedNetworkArgNum {
 		return api.ErrActorMethodArgNum
 	}
 	argValues := make([]reflect.Value, fixedNetworkArgNum, fixedNetworkArgNum)
 	argValues[0] = reflect.ValueOf(ctx.Actor())
 	argValues[1] = reflect.ValueOf(msg.Session)
-	request, err := newArg(m.ArgTypes[2], ctx.System().Serializer(), msg.Data)
+	request, err := newArg(m.ArgTypes[2], ctx.System().Serializer(), msg.Session.Message.Data)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ type innerMethod struct {
 	*reflectx.Method
 }
 
-func (m *innerMethod) call(ctx api.IActorContext, msg *api.ActorMessage) (rsp *api.RespondMessage) {
+func (m *innerMethod) call(ctx api.IActorContext, msg *api.Message) (rsp *api.RespondMessage) {
 	rsp = new(api.RespondMessage)
 	if m.ArgNum < fixedInnerArgNum {
 		rsp.Err = api.ErrActorArgsNum

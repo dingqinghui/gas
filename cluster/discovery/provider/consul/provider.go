@@ -26,15 +26,14 @@ type consulProvider struct {
 	cfg       *config
 }
 
-func NewConsulProvider(node api2.INode) (api2.IDiscoveryProvider, error) {
+func NewConsulProvider() (api2.IDiscoveryProvider, error) {
 	c := new(consulProvider)
-	c.SetNode(node)
 	c.Init()
 	return c, nil
 }
 
 func (c *consulProvider) Init() {
-	c.cfg = initConfig(c.Node())
+	c.cfg = initConfig()
 	c.status = "pass"
 
 	if err := c.connect(c.cfg.address); err != nil {
@@ -135,8 +134,8 @@ func (c *consulProvider) AddNode(node api2.INodeBase) *api2.Error {
 func (c *consulProvider) healthCheckActor() {
 	zlog.Info("consul health check begin")
 	for !c.IsStop() {
-		if err := c.client.Agent().UpdateTTL("service:"+convertor.ToString(c.Node().GetID()), "", c.status); err != nil {
-			zlog.Error("consul health agent err", zap.Uint64("nodeId", c.Node().GetID()),
+		if err := c.client.Agent().UpdateTTL("service:"+convertor.ToString(api2.GetNode().GetID()), "", c.status); err != nil {
+			zlog.Error("consul health agent err", zap.Uint64("nodeId", api2.GetNode().GetID()),
 				zap.String("status", c.status), zap.Error(err))
 			return
 		}

@@ -12,6 +12,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	currentNode INode
+)
+
+func SetNode(node INode) {
+	currentNode = node
+}
+
+func GetNode() INode {
+	return currentNode
+}
+
 type (
 	INodeBase interface {
 		GetName() string
@@ -37,6 +49,7 @@ type (
 		NextId() int64
 		AddModule(modules ...IModule)
 		Terminate(reason string)
+		Serializer() ISerializer
 		//App() IApp
 		//SetApp(app IApp)
 	}
@@ -47,13 +60,6 @@ type (
 		Port          int
 		Tags          []string
 		Meta          map[string]string
-	}
-
-	Topology struct {
-		All    []INodeBase
-		Alive  []INodeBase
-		Joined []INodeBase
-		Left   []INodeBase
 	}
 )
 

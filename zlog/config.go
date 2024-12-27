@@ -17,7 +17,8 @@ import (
 	"path/filepath"
 )
 
-func initConfig(node api.INode) *config {
+func initConfig() *config {
+	node := api.GetNode()
 	c := new(config)
 	viper := node.GetViper().Sub("log")
 

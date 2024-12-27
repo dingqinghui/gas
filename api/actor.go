@@ -9,7 +9,6 @@
 package api
 
 import (
-	"fmt"
 	"github.com/dingqinghui/gas/extend/reflectx"
 	"time"
 )
@@ -21,27 +20,8 @@ const (
 )
 
 type (
-	ActorEmptyMessage = *struct{}
-
-	RespondFun func(rsp *RespondMessage) *Error
-
-	ActorMessageType = byte
-
-	ActorMessage struct {
-		Typ        int
-		MethodName string
-		From       *Pid
-		To         *Pid
-		Data       []byte
-		Mid        uint16
-		Session    *Session
-		respond    RespondFun
-	}
-	RespondMessage struct {
-		Data []byte
-		Err  *Error
-	}
-
+	ActorEmptyMessage    = *struct{}
+	ActorMessageType     = byte
 	ActorProducer        func() IActor
 	IActorMessageInvoker interface {
 		InvokerMessage(message interface{}) *Error
@@ -51,12 +31,12 @@ type (
 		RegisterHandlers(invoker IActorMessageInvoker, dispatcher IActorDispatcher)
 	}
 	IActorDispatcher interface {
-		Schedule(node INode, f func(), recoverFun func(err interface{})) *Error
+		Schedule(f func(), recoverFun func(err interface{})) *Error
 		Throughput() int
 	}
 	IActorContext interface {
 		Name() string
-		Message() *ActorMessage
+		Message() *Message
 		Process() IProcess
 		System() IActorSystem
 		Actor() IActor
@@ -67,8 +47,6 @@ type (
 		Router() IActorRouter
 		Send(to *Pid, funcName string, request interface{}) *Error
 		Call(to *Pid, funcName string, request, reply interface{}) *Error
-		Response(session *Session, s2c interface{}) *Error
-		Push(session *Session, mid uint16, s2c interface{}) *Error
 		AddGroup(eventName string)
 		RemoveGroup(eventName string)
 		BroadcastGroup(eventName string, msg interface{}) *Error
@@ -78,8 +56,8 @@ type (
 		IStopper
 		Pid() *Pid
 		Context() IActorContext
-		PostMessage(message *ActorMessage) *Error
-		PostMessageAndWait(message *ActorMessage) (rsp *RespondMessage)
+		PostMessage(message *Message) *Error
+		PostMessageAndWait(message *Message) (rsp *RespondMessage)
 		Stop() *Error
 	}
 
@@ -97,13 +75,11 @@ type (
 		Find(pid *Pid) IProcess
 		RegisterName(name string, pid *Pid) *Error
 		UnregisterName(name string) (*Pid, *Error)
-		PostMessage(to *Pid, message *ActorMessage) *Error
+		PostMessage(to *Pid, message *Message) *Error
 		Send(from, to *Pid, funcName string, request interface{}) *Error
 		Call(from, to *Pid, funcName string, request, reply interface{}) *Error
 		Timeout() time.Duration
 		SetTimeout(timeout time.Duration)
-		Serializer() ISerializer
-		SetSerializer(serializer ISerializer)
 		IsLocalPid(pid *Pid) bool
 		SetRouter(name string, router IActorRouter)
 		GetOrSetRouter(actor IActor) IActorRouter
@@ -131,12 +107,6 @@ type (
 		Mailbox    IActorMailbox
 		Name       string
 	}
-
-	Pid struct {
-		NodeId uint64
-		UniqId uint64
-		Name   string
-	}
 )
 
 func (r *BuiltinActor) OnInit(ctx IActorContext) *Error {
@@ -162,82 +132,4 @@ func WithActorName(name string) ProcessOption {
 	return func(b *ActorProcessOptions) {
 		b.Name = name
 	}
-}
-
-func (m *ActorMessage) Respond(rsp *RespondMessage) *Error {
-	if m.respond == nil {
-		return nil
-	}
-	return m.respond(rsp)
-}
-
-func (m *ActorMessage) SetRespond(respond RespondFun) {
-	m.respond = respond
-}
-func (m *ActorMessage) IsBroadcast() bool {
-	return m.Typ == ActorBroadcastMessage
-}
-
-func BuildNetMessage(session *Session, methodName string, msg *NetworkMessage) *ActorMessage {
-	return &ActorMessage{
-		Typ:        ActorNetMessage,
-		MethodName: methodName,
-		Session:    session,
-		Mid:        msg.GetID(),
-		Data:       msg.Data,
-	}
-}
-func BuildInnerMessage(from, to *Pid, methodName string, data []byte) *ActorMessage {
-	return &ActorMessage{
-		From:       from,
-		To:         to,
-		Typ:        ActorInnerMessage,
-		MethodName: methodName,
-		Data:       data,
-	}
-}
-
-func BuildBroadMessage(from *Pid, service string, methodName string, data []byte) *ActorMessage {
-	return &ActorMessage{
-		From:       from,
-		To:         NewRemotePid(0, service),
-		Typ:        ActorInnerMessage,
-		MethodName: methodName,
-		Data:       data,
-	}
-}
-
-func NewRemotePid(nodeId uint64, service string) *Pid {
-	return &Pid{
-		NodeId: nodeId,
-		Name:   service,
-	}
-}
-
-func ValidPid(pid *Pid) bool {
-	if pid == nil {
-		return false
-	}
-	if pid.GetUniqId() > 0 {
-		return true
-	}
-	if pid.GetName() != "" {
-		return true
-	}
-	return false
-}
-func (p *Pid) GetNodeId() uint64 {
-	return p.NodeId
-}
-func (p *Pid) GetUniqId() uint64 {
-	return p.UniqId
-}
-func (p *Pid) String() string {
-	if p == nil {
-		return ""
-	}
-	return fmt.Sprintf("%v.%v", p.NodeId, p.UniqId)
-}
-func (p *Pid) GetName() string {
-	return p.Name
 }

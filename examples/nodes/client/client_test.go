@@ -29,7 +29,7 @@ func (c *ClientAgent) OnInit(ctx api.IActorContext) *api.Error {
 		Name:    "Login",
 		Content: "test chat message",
 	}
-	return c.Ctx.Push(c.Session, 1, c2s)
+	return c.Session().Push(1, c2s)
 	//return c.PushMid(1, c2s)
 }
 

@@ -10,12 +10,14 @@ package network
 
 import (
 	"github.com/dingqinghui/gas/api"
+	"github.com/dingqinghui/gas/network/message"
+	"github.com/dingqinghui/gas/network/packet"
 	"github.com/dingqinghui/gas/zlog"
 	"go.uber.org/zap"
 )
 
 type IFsmState interface {
-	Exec(packet api.INetPacket) *api.Error
+	Exec(packet *packet.NetworkPacket) *api.Error
 	Next() IFsmState
 	Name() string
 }
@@ -36,33 +38,32 @@ type closedState struct {
 	*baseState
 }
 
-func (s *closedState) Exec(packet api.INetPacket) *api.Error {
-	if s.Type() == api.NetListener && packet != nil {
-		if packet.GetTyp() != PacketTypeHandshake {
+func (s *closedState) Exec(pkt *packet.NetworkPacket) *api.Error {
+	if s.Type() == api.NetListener && pkt != nil {
+		if pkt.GetTyp() != packet.HandshakeType {
 			zlog.Error("net entity fsm exec", zap.Uint64("id", s.ID()),
-				zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
+				zap.Int("typ", int(pkt.GetTyp())), zap.Error(api.ErrPacketType))
 			return api.ErrPacketType
 		}
-		return s.serverHandshake(packet)
+		return s.serverHandshake(pkt)
 	} else {
-		_packet := NewHandshakePacket(s.opts.HandshakeBody)
-		if err := s.SendPacket(_packet); err != nil {
+		if err := s.SendRaw(packet.HandshakeType, s.opts.HandshakeBody); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *closedState) serverHandshake(packet api.INetPacket) *api.Error {
+func (s *closedState) serverHandshake(pkt *packet.NetworkPacket) *api.Error {
 	// handshake auth
-	buf, err := s.opts.HandshakeAuth(s, packet.GetData())
+	buf, err := s.opts.HandshakeAuth(s, pkt.GetData())
 	if !api.IsOk(err) {
 		zlog.Error("server handshake auth err",
 			zap.Uint64("sessionId", s.ID()), zap.Error(err))
 		return err
 	}
 	// ack client handshake
-	return s.SendPacket(NewHandshakePacket(buf))
+	return s.SendRaw(packet.HandshakeType, buf)
 }
 
 func (s *closedState) Next() IFsmState {
@@ -83,17 +84,17 @@ type waitHandshakeState struct {
 	*baseState
 }
 
-func (w *waitHandshakeState) Exec(packet api.INetPacket) *api.Error {
-	if packet == nil {
+func (w *waitHandshakeState) Exec(pkt *packet.NetworkPacket) *api.Error {
+	if pkt == nil {
 		return nil
 	}
-	if packet.GetTyp() != PacketTypeHandshake {
+	if pkt.GetTyp() != packet.HandshakeType {
 		zlog.Error("net entity fsm exec", zap.Uint64("id", w.ID()),
-			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
+			zap.Int("typ", int(pkt.GetTyp())), zap.Error(api.ErrPacketType))
 		return api.ErrPacketType
 	}
 	// send handshake ack
-	if err := w.SendPacket(HandshakeAckPacket); err != nil {
+	if err := w.SendRaw(packet.HandshakeAckType, nil); err != nil {
 		return err
 	}
 
@@ -113,13 +114,13 @@ type waitHandshakeAckState struct {
 	*baseState
 }
 
-func (w *waitHandshakeAckState) Exec(packet api.INetPacket) *api.Error {
-	if packet == nil {
+func (w *waitHandshakeAckState) Exec(pkt *packet.NetworkPacket) *api.Error {
+	if pkt == nil {
 		return nil
 	}
-	if packet.GetTyp() != PacketTypeHandshakeAck {
+	if pkt.GetTyp() != packet.HandshakeAckType {
 		zlog.Error("net entity fsm exec", zap.Uint64("id", w.ID()),
-			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
+			zap.Int("typ", int(pkt.GetTyp())), zap.Error(api.ErrPacketType))
 		return api.ErrPacketType
 	}
 	return w.spawnAgent()
@@ -141,22 +142,26 @@ type workingState struct {
 	*baseState
 }
 
-func (s *workingState) Exec(packet api.INetPacket) *api.Error {
-	if packet == nil {
+func (s *workingState) Exec(pkt *packet.NetworkPacket) *api.Error {
+	if pkt == nil {
 		return nil
 	}
-	if packet.GetTyp() != PacketTypeData && packet.GetTyp() != PacketTypeHeartbeat {
+	if pkt.GetTyp() != packet.DataType && pkt.GetTyp() != packet.HeartbeatType {
 		zlog.Error("net entity fsm exec", zap.Uint64("id", s.ID()),
-			zap.Int("typ", int(packet.GetTyp())), zap.Error(api.ErrPacketType))
+			zap.Int("typ", int(pkt.GetTyp())), zap.Error(api.ErrPacketType))
 		return api.ErrPacketType
 	}
-	if packet.GetTyp() == PacketTypeHeartbeat {
+	if pkt.GetTyp() == packet.HeartbeatType {
 		//s.heartBeat()
 	}
-	return s.processDataPack(packet)
+	return s.processDataPack(pkt)
 }
-func (s *workingState) processDataPack(packet api.INetPacket) *api.Error {
-	msg := msgCodec.Decode(packet.GetData())
+func (s *workingState) processDataPack(packet *packet.NetworkPacket) *api.Error {
+	msg := message.Decode(packet.GetData())
+
+	session := s.session.Dup()
+	session.Message = msg
+
 	routeFunc := s.opts.RouterHandler
 	if routeFunc == nil {
 		return api.ErrNetworkRoute
@@ -165,8 +170,13 @@ func (s *workingState) processDataPack(packet api.INetPacket) *api.Error {
 	if err != nil {
 		return err
 	}
-	message := api.BuildNetMessage(s.Session(), method, msg)
-	return s.Node().System().PostMessage(to, message)
+
+	actMessage := &api.Message{
+		Typ:        api.ActorNetMessage,
+		MethodName: method,
+		Session:    session,
+	}
+	return api.GetNode().System().PostMessage(to, actMessage)
 }
 
 func (s *workingState) Next() IFsmState {
