@@ -13,15 +13,7 @@ import (
 	"time"
 )
 
-const (
-	ActorNetMessage = iota
-	ActorInnerMessage
-	ActorBroadcastMessage
-)
-
 type (
-	ActorEmptyMessage    = *struct{}
-	ActorMessageType     = byte
 	ActorProducer        func() IActor
 	IActorMessageInvoker interface {
 		InvokerMessage(message interface{}) *Error

@@ -18,29 +18,18 @@ const (
 )
 
 func NewSession(entity INetEntity) *Session {
-	ses := new(Session)
-	ses.Agent = entity.GetAgent()
-	ses.entity = entity
-	return ses
+	return &Session{
+		entity: entity,
+		ctx:    nil,
+	}
 }
 
 type Session struct {
-	Agent   *Pid
-	Message *message.Message
-	entity  INetEntity
-	ctx     IActorContext
-}
-
-func (s *Session) GetEntity() INetEntity {
-	return s.entity
-}
-
-func (s *Session) Dup() *Session {
-	return &Session{
-		Agent:   s.Agent,
-		Message: nil,
-		entity:  s.entity,
-	}
+	Agent  *Pid
+	Mid    uint32
+	Index  uint32
+	ctx    IActorContext
+	entity INetEntity
 }
 
 func (s *Session) SetContext(ctx IActorContext) {
@@ -48,22 +37,30 @@ func (s *Session) SetContext(ctx IActorContext) {
 }
 
 func (s *Session) Response(payload interface{}) *Error {
+	if GetNode() == nil || GetNode().Serializer() == nil {
+		return nil
+	}
 	body, err := GetNode().Serializer().Marshal(payload)
 	if err != nil {
 		return ErrMarshal
 	}
 	m := message.NewWithData(body)
-	m.Copy(s.Message)
+	m.ID = uint16(s.Mid)
+	m.Index = s.Index
 	return s.push(m)
 }
 
 func (s *Session) ResponseErr(err *Error) *Error {
 	m := message.NewErr(err.Id)
-	m.Copy(s.Message)
+	m.ID = uint16(s.Mid)
+	m.Index = s.Index
 	return s.push(m)
 }
 
 func (s *Session) Push(mid uint16, payload interface{}) *Error {
+	if GetNode() == nil || GetNode().Serializer() == nil {
+		return nil
+	}
 	body, err := GetNode().Serializer().Marshal(payload)
 	if err != nil {
 		return ErrMarshal
@@ -75,7 +72,7 @@ func (s *Session) Push(mid uint16, payload interface{}) *Error {
 }
 
 func (s *Session) push(m *message.Message) *Error {
-	entity := s.GetEntity()
+	entity := s.entity
 	if entity != nil {
 		return entity.SendMessage(m)
 	} else {
@@ -84,17 +81,28 @@ func (s *Session) push(m *message.Message) *Error {
 }
 
 func (s *Session) forwardToAgent(method string, payload interface{}) *Error {
-	mData, wrong := GetNode().Serializer().Marshal(payload)
-	if wrong != nil {
+	if GetNode() == nil || GetNode().Serializer() == nil {
+		return nil
+	}
+	data, err := GetNode().Serializer().Marshal(payload)
+	if err != nil {
 		return ErrMarshal
 	}
-	actorMsg := BuildInnerMessage(s.ctx.Self(), s.Agent, method, mData)
-	return GetNode().System().PostMessage(s.Agent, actorMsg)
+	actMessage := &Message{
+		Session: s,
+		Typ:     MessageEnumInner,
+		Method:  method,
+		Data:    data,
+		To:      s.Agent,
+		From:    s.ctx.Self(),
+	}
+	return GetNode().System().PostMessage(s.Agent, actMessage)
 }
 
 func (s *Session) Close(reason *Error) *Error {
-	if s.entity == nil {
-		return s.entity.Close(reason)
+	entity := s.entity
+	if entity == nil {
+		return entity.Close(reason)
 	} else {
 		return s.forwardToAgent(sessionClose, reason)
 	}

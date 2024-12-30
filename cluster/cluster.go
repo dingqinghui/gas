@@ -13,10 +13,17 @@ import (
 )
 
 func NewPid(service string, lb api.IBalancer, user interface{}) *api.Pid {
+	if api.GetNode() == nil || api.GetNode().Discovery() == nil {
+		return nil
+	}
 	nodes := api.GetNode().Discovery().GetByKind(service)
 	selectNode := lb.Do(nodes, user)
 	if selectNode == nil {
 		return nil
 	}
-	return api.NewRemotePid(selectNode.GetID(), service)
+	return &api.Pid{
+		NodeId: selectNode.GetID(),
+		UniqId: 0,
+		Name:   service,
+	}
 }

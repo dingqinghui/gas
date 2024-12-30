@@ -14,6 +14,9 @@ func NewDefaultDispatcher(throughput int) api.IActorDispatcher {
 	return goroutineDispatcher(throughput)
 }
 func (goroutineDispatcher) Schedule(fn func(), recoverFun func(err interface{})) *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	api.GetNode().Submit(fn, recoverFun)
 	return nil
 }
@@ -26,6 +29,9 @@ func (d goroutineDispatcher) Throughput() int {
 type synchronizedDispatcher int
 
 func (synchronizedDispatcher) Schedule(fn func(), recoverFun func(err interface{})) *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	api.GetNode().Try(fn, recoverFun)
 	return nil
 }

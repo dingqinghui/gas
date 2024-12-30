@@ -40,7 +40,11 @@ func (h *Router) Set(name string, method *reflectx.Method) {
 	h.dict[name] = method
 }
 
-func newArg(argType reflect.Type, serializer api.ISerializer, data []byte) (arg any, err *api.Error) {
+func newArg(argType reflect.Type, data []byte) (arg any, err *api.Error) {
+	if api.GetNode() == nil {
+		return
+	}
+	serializer := api.GetNode().Serializer()
 	if argType == typeOfBytes {
 		arg = data
 		return
@@ -67,7 +71,7 @@ func (m *networkMethod) call(ctx api.IActorContext, msg *api.Message) *api.Error
 	argValues := make([]reflect.Value, fixedNetworkArgNum, fixedNetworkArgNum)
 	argValues[0] = reflect.ValueOf(ctx.Actor())
 	argValues[1] = reflect.ValueOf(msg.Session)
-	request, err := newArg(m.ArgTypes[2], ctx.System().Serializer(), msg.Session.Message.Data)
+	request, err := newArg(m.ArgTypes[2], msg.Data)
 	if err != nil {
 		return err
 	}
@@ -96,7 +100,7 @@ func (m *innerMethod) call(ctx api.IActorContext, msg *api.Message) (rsp *api.Re
 	argValues := make([]reflect.Value, m.ArgNum, m.ArgNum)
 	argValues[0] = reflect.ValueOf(ctx.Actor())
 	if m.ArgNum >= fixedInnerArgNum+1 {
-		request, err := newArg(m.ArgTypes[1], ctx.System().Serializer(), msg.Data)
+		request, err := newArg(m.ArgTypes[1], msg.Data)
 		if err != nil {
 			rsp.Err = err
 			return
@@ -109,7 +113,7 @@ func (m *innerMethod) call(ctx api.IActorContext, msg *api.Message) (rsp *api.Re
 }
 
 func (m *innerMethod) returnValues(ctx api.IActorContext, values []reflect.Value, rsp *api.RespondMessage) {
-	if values == nil {
+	if values == nil || api.GetNode() == nil {
 		return
 	}
 	returnCnt := len(values)
@@ -123,7 +127,8 @@ func (m *innerMethod) returnValues(ctx api.IActorContext, values []reflect.Value
 		}
 	case 2:
 		if !values[0].IsNil() {
-			if buf, err := ctx.System().Serializer().Marshal(values[0].Interface()); err != nil {
+			serializer := api.GetNode().Serializer()
+			if buf, err := serializer.Marshal(values[0].Interface()); err != nil {
 				rsp.Err = api.ErrMarshal
 				return
 			} else {

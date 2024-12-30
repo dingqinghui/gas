@@ -16,11 +16,13 @@ import (
 type AgentActor struct {
 	api.BuiltinActor
 	api.INetEntity
+	*api.Session
 }
 
 func (t *AgentActor) OnInit(ctx api.IActorContext) *api.Error {
 	_ = t.BuiltinActor.OnInit(ctx)
 	t.INetEntity = ctx.InitParams().(api.INetEntity)
+	t.Session = t.INetEntity.Session()
 	return nil
 }
 

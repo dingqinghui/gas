@@ -35,11 +35,17 @@ func (c *Conn) Name() string {
 
 func (c *Conn) Init() {
 	c.cfg = initConfig()
+	if c.cfg == nil {
+		return
+	}
 	c.msgChan = make(chan *nats.Msg, c.cfg.recChanSize)
 	c.connect()
 }
 
 func (c *Conn) connect() {
+	if c.cfg == nil {
+		return
+	}
 	con, err := nats.Connect(c.cfg.urls)
 	if err != nil {
 		zlog.Error("nats connect err", zap.String("address", c.cfg.urls), zap.Error(err))
@@ -83,6 +89,9 @@ func (c *Conn) Send(topic string, data []byte) *api.Error {
 }
 
 func (c *Conn) Subscribe(topic string, process api.RpcProcessHandler) {
+	if api.GetNode() == nil {
+		return
+	}
 	_, chanErr := c.rawCon.ChanSubscribe(topic, c.msgChan)
 	if chanErr != nil {
 		zlog.Error("nats chan subscribe error", zap.Error(chanErr))

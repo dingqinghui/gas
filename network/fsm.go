@@ -13,6 +13,7 @@ import (
 	"github.com/dingqinghui/gas/network/message"
 	"github.com/dingqinghui/gas/network/packet"
 	"github.com/dingqinghui/gas/zlog"
+	"github.com/duke-git/lancet/v2/convertor"
 	"go.uber.org/zap"
 )
 
@@ -157,26 +158,32 @@ func (s *workingState) Exec(pkt *packet.NetworkPacket) *api.Error {
 	return s.processDataPack(pkt)
 }
 func (s *workingState) processDataPack(packet *packet.NetworkPacket) *api.Error {
+	if api.GetNode() == nil || api.GetNode().System() == nil {
+		return nil
+	}
+
 	msg := message.Decode(packet.GetData())
 
-	session := s.session.Dup()
-	session.Message = msg
+	session := convertor.DeepClone(s.session)
+	session.Mid = uint32(msg.ID)
+	session.Index = msg.Index
 
 	routeFunc := s.opts.RouterHandler
 	if routeFunc == nil {
 		return api.ErrNetworkRoute
 	}
-	to, method, err := routeFunc(s.Session(), msg)
+	to, method, err := routeFunc(session, msg)
 	if err != nil {
 		return err
 	}
 
-	actMessage := &api.Message{
-		Typ:        api.ActorNetMessage,
-		MethodName: method,
-		Session:    session,
+	m := &api.Message{
+		Typ:     api.MessageEnumNetwork,
+		Method:  method,
+		Session: session,
+		Data:    msg.Data,
 	}
-	return api.GetNode().System().PostMessage(to, actMessage)
+	return api.GetNode().System().PostMessage(to, m)
 }
 
 func (s *workingState) Next() IFsmState {

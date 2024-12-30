@@ -25,8 +25,13 @@ type ZLogger struct {
 }
 
 func (z *ZLogger) Init() {
-
+	if api.GetNode() == nil {
+		return
+	}
 	z.cfg = initConfig()
+	if z.cfg == nil {
+		return
+	}
 	z.loglevel = zap.NewAtomicLevelAt(z.cfg.getLevel())
 	encoderConfig := zapcore.EncoderConfig{
 		MessageKey:     "M",                                                            // 结构化（json）输出：msg的key
@@ -78,6 +83,9 @@ func (z *ZLogger) Stop() *api.Error {
 var log *ZLogger
 
 func Init() {
+	if api.GetNode() == nil {
+		return
+	}
 	log = new(ZLogger)
 	log.Init()
 	api.GetNode().AddModule(log)

@@ -19,6 +19,9 @@ import (
 
 func initConfig() *config {
 	node := api.GetNode()
+	if node == nil {
+		return nil
+	}
 	c := new(config)
 	viper := node.GetViper().Sub("log")
 

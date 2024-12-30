@@ -15,6 +15,9 @@ import (
 
 func initConfig() *config {
 	node := api.GetNode()
+	if node == nil {
+		return nil
+	}
 	c := new(config)
 	vp := node.GetViper().Sub("cluster.consul")
 	c.address = vp.GetString("address")

@@ -29,12 +29,13 @@ func (c *ClientAgent) OnInit(ctx api.IActorContext) *api.Error {
 		Name:    "Login",
 		Content: "test chat message",
 	}
-	return c.Session().Push(1, c2s)
+	return c.Session.Push(1, c2s)
 	//return c.PushMid(1, c2s)
 }
 
 func (c *ClientAgent) Data(session *api.Session, message *common.ClientMessage) *api.Error {
 	zlog.Info("ClientAgent receive message", zap.Any("message", message))
+
 	return nil
 }
 

@@ -19,6 +19,9 @@ import (
 )
 
 func New(msgque api.IRpcMessageQue) api.IRpc {
+	if api.GetNode() == nil {
+		return nil
+	}
 	r := new(Rpc)
 	r.msgque = msgque
 	api.GetNode().AddModule(r)
@@ -31,6 +34,9 @@ type Rpc struct {
 }
 
 func (r *Rpc) Run() {
+	if api.GetNode() == nil {
+		return
+	}
 	process := func(subj string, data []byte, respondFun api.RpcRespondHandler) {
 		if err := r.process(data, respondFun); err != nil {
 			zlog.Error("rpc process", zap.Error(err))
@@ -68,6 +74,9 @@ func (r *Rpc) PostMessage(to *api.Pid, message *api.Message) *api.Error {
 }
 
 func (r *Rpc) send(topic string, message *api.Message) *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	buf, err := api.GetNode().Serializer().Marshal(message)
 	if err != nil {
 		zlog.Error("rpc marshal request err", zap.Error(err))
@@ -77,6 +86,9 @@ func (r *Rpc) send(topic string, message *api.Message) *api.Error {
 }
 
 func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.Message) (rsp *api.RespondMessage) {
+	if api.GetNode() == nil {
+		return
+	}
 	rsp = new(api.RespondMessage)
 	data, err := api.GetNode().Serializer().Marshal(message)
 	if err != nil {
@@ -100,6 +112,9 @@ func (r *Rpc) Call(to *api.Pid, timeout time.Duration, message *api.Message) (rs
 }
 
 func (r *Rpc) process(data []byte, respond api.RpcRespondHandler) *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	message := new(api.Message)
 	if err := api.GetNode().Serializer().Unmarshal(data, message); err != nil {
 		zlog.Error("rpc process  err", zap.Error(err))

@@ -41,11 +41,14 @@ func (m *Group) Remove(name string, pid *api.Pid) {
 }
 
 func (m *Group) Broadcast(name string, from *api.Pid, msg interface{}) *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	event, ok := m.dict.Get(name)
 	if !ok {
 		return nil
 	}
-	data, err := m.system.Serializer().Marshal(msg)
+	data, err := api.GetNode().Serializer().Marshal(msg)
 	if err != nil {
 		return api.ErrMarshal
 	}

@@ -48,9 +48,6 @@ type (
 		Traffic(c gnet.Conn) error
 		SendRaw(typ packet.Type, data []byte) *Error
 		SendMessage(msg *message.Message) *Error
-		//Response(session *Session, payload interface{}) *Error
-		//ResponseErr(session *Session, err *Error) *Error
-		//Push(mid uint16, payload interface{}) *Error
 		Close(reason *Error) *Error
 		Closed(err error) *Error
 		RawCon() gnet.Conn
@@ -68,3 +65,11 @@ type (
 
 func (m *NetworkMessage) GetID() uint16   { return m.Id }
 func (m *NetworkMessage) GetData() []byte { return m.Data }
+
+type ISession interface {
+	SetContext(ctx IActorContext)
+	Response(payload interface{}) *Error
+	ResponseErr(err *Error) *Error
+	Push(mid uint16, payload interface{}) *Error
+	Close(reason *Error) *Error
+}

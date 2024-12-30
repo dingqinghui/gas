@@ -45,7 +45,7 @@ func (a *baseActorContext) InvokerMessage(msg interface{}) *api.Error {
 	if err := a.invokerMessage(a.mbm); err != nil {
 		zlog.Error("actor处理消息失败",
 			zap.String("name", reflectx.TypeFullName(a.Actor())),
-			zap.String("method", a.mbm.MethodName),
+			zap.String("method", a.mbm.Method),
 			zap.Error(err))
 		return err
 	}
@@ -54,17 +54,17 @@ func (a *baseActorContext) InvokerMessage(msg interface{}) *api.Error {
 
 func (a *baseActorContext) invokerMessage(msg *api.Message) *api.Error {
 
-	switch msg.MethodName {
-	case InitFuncName:
+	switch msg.Method {
+	case api.InitFuncName:
 		return a.Actor().OnInit(a)
-	case StopFuncName:
+	case api.StopFuncName:
 		return a.OnStop()
 	}
 
 	switch msg.Typ {
-	case api.ActorInnerMessage:
+	case api.MessageEnumInner:
 		return a.invokerInnerMessage(msg)
-	case api.ActorNetMessage:
+	case api.MessageEnumNetwork:
 		return a.invokerNetMessage(msg)
 	}
 	return nil
@@ -74,7 +74,7 @@ func (a *baseActorContext) invokerNetMessage(msg *api.Message) *api.Error {
 	if a.router == nil {
 		return api.ErrActorRouterIsNil
 	}
-	md := a.router.Get(msg.MethodName)
+	md := a.router.Get(msg.Method)
 	if md == nil {
 		return api.ErrActorNotMethod
 	}
@@ -87,7 +87,7 @@ func (a *baseActorContext) invokerInnerMessage(msg *api.Message) *api.Error {
 	if a.router == nil {
 		return api.ErrActorRouterIsNil
 	}
-	md := a.router.Get(msg.MethodName)
+	md := a.router.Get(msg.Method)
 	if md == nil {
 		return api.ErrActorNotMethod
 	}

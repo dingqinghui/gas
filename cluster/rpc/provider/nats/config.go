@@ -11,6 +11,9 @@ package nats
 import "github.com/dingqinghui/gas/api"
 
 func initConfig() *config {
+	if api.GetNode() == nil {
+		return nil
+	}
 	node := api.GetNode()
 	c := new(config)
 	vp := node.GetViper().Sub("cluster.nats")

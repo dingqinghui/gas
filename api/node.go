@@ -9,6 +9,7 @@
 package api
 
 import (
+	"github.com/dingqinghui/gas/extend/xerror"
 	"github.com/spf13/viper"
 )
 
@@ -21,6 +22,7 @@ func SetNode(node INode) {
 }
 
 func GetNode() INode {
+	xerror.NilAssert(currentNode)
 	return currentNode
 }
 
@@ -50,8 +52,6 @@ type (
 		AddModule(modules ...IModule)
 		Terminate(reason string)
 		Serializer() ISerializer
-		//App() IApp
-		//SetApp(app IApp)
 	}
 
 	BaseNode struct {

@@ -21,7 +21,7 @@ import (
 
 var autoId atomic.Uint64
 
-func newEntity(server api.INetServer, opts *Options, rawCon gnet.Conn) *Entity {
+func newEntity(server api.INetServer, opts *Options, rawCon gnet.Conn) api.INetEntity {
 	entity := &Entity{
 		id:     autoId.Add(1),
 		server: server,
@@ -43,7 +43,6 @@ func newEntity(server api.INetServer, opts *Options, rawCon gnet.Conn) *Entity {
 	if entity.Type() == api.NetConnector {
 		xerror.Assert(entity.exec(nil))
 	}
-
 	zlog.Info("new entity",
 		zap.Uint64("entityId", entity.ID()),
 		zap.Int("typ", int(entity.Type())),
@@ -72,7 +71,9 @@ type Entity struct {
 func (s *Entity) ID() uint64 {
 	return s.id
 }
-
+func (s *Entity) Session() *api.Session {
+	return s.session
+}
 func (s *Entity) Traffic(c gnet.Conn) error {
 	packets := packet.Decode(c)
 	for _, pkt := range packets {
@@ -104,15 +105,16 @@ func (s *Entity) exec(packet *packet.NetworkPacket) error {
 }
 
 func (s *Entity) spawnAgent() *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	s.session = api.NewSession(s)
-
 	pid, err := api.GetNode().System().Spawn(s.opts.AgentProducer, s)
 	if err != nil {
 		zlog.Error("entity spawn agent err",
 			zap.Uint64("entityId", s.ID()), zap.Error(err))
 		return err
 	}
-
 	if pid == nil {
 		zlog.Error("entity spawn agent err",
 			zap.Uint64("entityId", s.ID()), zap.Error(api.ErrPidIsNil))
@@ -120,8 +122,7 @@ func (s *Entity) spawnAgent() *api.Error {
 	}
 	s.agentPid = pid
 	s.session.Agent = s.agentPid
-	zlog.Info("entity spawn agent",
-		zap.Uint64("entityId", s.ID()), zap.String("agent", pid.String()))
+	zlog.Info("entity spawn agent", zap.Uint64("entityId", s.ID()))
 	return nil
 }
 
@@ -217,6 +218,9 @@ func (s *Entity) Close(reason *api.Error) *api.Error {
 }
 
 func (s *Entity) Closed(err error) *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	if s.agentPid != nil {
 		if wrong := api.GetNode().System().Send(nil, s.agentPid, "Closed", nil); wrong != nil {
 			zlog.Error("entity closed", zap.Uint64("id", s.ID()), zap.Error(err))
@@ -239,10 +243,6 @@ func (s *Entity) RawCon() gnet.Conn {
 }
 func (s *Entity) GetAgent() *api.Pid {
 	return s.agentPid
-}
-
-func (s *Entity) Session() *api.Session {
-	return s.session
 }
 
 func (s *Entity) Kick(reason *api.Error) *api.Error {

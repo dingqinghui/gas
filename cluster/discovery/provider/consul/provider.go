@@ -35,7 +35,9 @@ func NewConsulProvider() (api2.IDiscoveryProvider, error) {
 func (c *consulProvider) Init() {
 	c.cfg = initConfig()
 	c.status = "pass"
-
+	if c.cfg == nil {
+		return
+	}
 	if err := c.connect(c.cfg.address); err != nil {
 		zlog.Panic("consul connect err", zap.Error(err))
 		return
@@ -76,6 +78,9 @@ func (c *consulProvider) WatchNode(clusterName string, f api2.EventNodeUpdateHan
 }
 
 func (c *consulProvider) monitorMemberStatusChanges(clusterName string, f api2.EventNodeUpdateHandler) *api2.Error {
+	if c.cfg == nil {
+		return nil
+	}
 	opt := &api.QueryOptions{
 		WaitIndex: c.waitIndex,
 		WaitTime:  c.cfg.watchWaitTime,
@@ -104,6 +109,9 @@ func (c *consulProvider) monitorMemberStatusChanges(clusterName string, f api2.E
 }
 
 func (c *consulProvider) AddNode(node api2.INodeBase) *api2.Error {
+	if c.cfg == nil {
+		return nil
+	}
 	// 注册服务
 	check := &api.AgentServiceCheck{
 		TTL:                            (c.cfg.healthTtl).String(),
@@ -132,6 +140,12 @@ func (c *consulProvider) AddNode(node api2.INodeBase) *api2.Error {
 }
 
 func (c *consulProvider) healthCheckActor() {
+	if api2.GetNode() == nil {
+		return
+	}
+	if c.cfg == nil {
+		return
+	}
 	zlog.Info("consul health check begin")
 	for !c.IsStop() {
 		if err := c.client.Agent().UpdateTTL("service:"+convertor.ToString(api2.GetNode().GetID()), "", c.status); err != nil {

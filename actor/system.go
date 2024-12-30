@@ -31,7 +31,9 @@ type System struct {
 
 func NewSystem() api.IActorSystem {
 	s := new(System)
-	api.GetNode().AddModule(s)
+	if api.GetNode() != nil {
+		api.GetNode().AddModule(s)
+	}
 	return s
 }
 
@@ -68,6 +70,9 @@ func (s *System) SetTimeout(timeout time.Duration) {
 }
 
 func (s *System) Find(pid *api.Pid) api.IProcess {
+	if api.GetNode() == nil {
+		return nil
+	}
 	if pid == nil {
 		return nil
 	}
@@ -133,24 +138,31 @@ func (s *System) Spawn(producer api.ActorProducer, params interface{}, opts ...a
 }
 
 func (s *System) PostMessage(to *api.Pid, message *api.Message) *api.Error {
+	node := api.GetNode()
+	if node == nil || node.Rpc() == nil {
+		return nil
+	}
 	if to == nil {
 		return api.ErrInvalidPid
 	}
 	if !api.ValidPid(to) {
 		return api.ErrInvalidPid
 	}
-	if s.IsLocalPid(to) || message.IsBroadcast() {
+	if s.IsLocalPid(to) {
 		process := s.Find(to)
 		if process == nil {
 			return api.ErrProcessNotExist
 		}
 		return process.PostMessage(message)
 	} else {
-		return api.GetNode().Rpc().PostMessage(to, message)
+		return node.Rpc().PostMessage(to, message)
 	}
 }
 
 func (s *System) Send(from, to *api.Pid, funcName string, request interface{}) *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	data, err := api.GetNode().Serializer().Marshal(request)
 	if err != nil {
 		return api.ErrJsonPack
@@ -160,6 +172,9 @@ func (s *System) Send(from, to *api.Pid, funcName string, request interface{}) *
 }
 
 func (s *System) Call(from, to *api.Pid, funcName string, request, reply interface{}) *api.Error {
+	if api.GetNode() == nil || api.GetNode().Rpc() == nil {
+		return nil
+	}
 	if !api.ValidPid(to) {
 		return api.ErrInvalidPid
 	}
@@ -194,6 +209,9 @@ func (s *System) Call(from, to *api.Pid, funcName string, request, reply interfa
 }
 
 func (s *System) unmarshalRsp(rsp *api.RespondMessage, reply interface{}) *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	if rsp.Data == nil {
 		return nil
 	}
@@ -204,6 +222,9 @@ func (s *System) unmarshalRsp(rsp *api.RespondMessage, reply interface{}) *api.E
 }
 
 func (s *System) IsLocalPid(pid *api.Pid) bool {
+	if api.GetNode() == nil {
+		return false
+	}
 	return pid.GetNodeId() == api.GetNode().GetID()
 }
 
@@ -236,7 +257,7 @@ func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...a
 
 	mb.RegisterHandlers(context, getDispatcher(opt))
 	// notify actor start
-	message := buildInitMessage()
+	message := api.BuildInitMessage()
 	if err := process.PostMessage(message); err != nil {
 		return nil, err
 	}

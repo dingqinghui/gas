@@ -47,7 +47,7 @@ func (a *ServerAgent) Login(session *api.Session, message *common.ClientMessage)
 	// network message
 	msg := a.Ctx.Message()
 	msg.To = chatPid
-	msg.MethodName = "Chat"
+	msg.Method = "Chat"
 	if err := a.Ctx.System().PostMessage(chatPid, msg); err != nil {
 		return err
 	}
@@ -80,6 +80,7 @@ func HandshakeAuthFunc(entity api.INetEntity, data []byte) ([]byte, *api.Error) 
 var routers = network.NewRouters()
 
 func NetRouterFunc(session *api.Session, msg *message.Message) (*api.Pid, string, *api.Error) {
+
 	router := routers.Get(msg.ID)
 	if router == nil {
 		return nil, "", api.ErrNetworkRoute

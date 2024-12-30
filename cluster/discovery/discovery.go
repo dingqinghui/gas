@@ -17,9 +17,11 @@ import (
 )
 
 func New(clusterName string, provider api.IDiscoveryProvider) api.IDiscovery {
+	if api.GetNode() == nil {
+		return nil
+	}
 	d := new(discovery)
 	api.GetNode().AddModule(d)
-
 	xerror.NilAssert(provider)
 	d.provider = provider
 	d.clusterName = clusterName
@@ -43,7 +45,7 @@ func (d *discovery) Name() string {
 }
 
 func (d *discovery) Run() {
-	if d.provider == nil {
+	if d.provider == nil || api.GetNode() == nil {
 		return
 	}
 	// watch node
@@ -96,6 +98,9 @@ func (d *discovery) RemoveNode(nodeId string) *api.Error {
 }
 
 func (d *discovery) Stop() *api.Error {
+	if api.GetNode() == nil {
+		return nil
+	}
 	if err := d.BuiltinStopper.Stop(); err != nil {
 		return err
 	}
