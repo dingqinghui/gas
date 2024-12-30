@@ -16,21 +16,27 @@ const (
 	MessageEnumBroadcast MessageEnum = 2
 )
 
-type RespondMessage struct {
-	Data []byte
-	Err  *Error
-}
-type RespondFun func(rsp *RespondMessage) *Error
+const (
+	InitFuncName = "OnInit"
+	StopFuncName = "OnStop"
+)
 
-type Message struct {
-	Typ     MessageEnum
-	Method  string
-	From    *Pid
-	To      *Pid
-	Data    []byte
-	Session *Session
-	respond RespondFun
-}
+type (
+	Message struct {
+		Typ     MessageEnum
+		Method  string
+		From    *Pid
+		To      *Pid
+		Data    []byte
+		Session *Session
+		respond RespondFun
+	}
+	RespondMessage struct {
+		Data []byte
+		Err  *Error
+	}
+	RespondFun func(rsp *RespondMessage) *Error
+)
 
 func (m *Message) Respond(rsp *RespondMessage) *Error {
 	if m.respond == nil {
@@ -53,46 +59,5 @@ func BuildInnerMessage(from, to *Pid, methodName string, data []byte) *Message {
 		Typ:    MessageEnumInner,
 		Method: methodName,
 		Data:   data,
-	}
-}
-
-const (
-	InitFuncName = "OnInit"
-	StopFuncName = "OnStop"
-)
-
-func BuildInitMessage() *Message {
-	return &Message{
-		Method: InitFuncName,
-	}
-}
-
-func BuildStopMessage() *Message {
-	return &Message{
-		Method: StopFuncName,
-	}
-}
-
-//func BuildBroadMessage(from *pb.Pid, service string, methodName string, data []byte) *Message {
-//	return &Message{
-//		From:       from,
-//		To:         NewRemotePid(0, service),
-//		Typ:        ActorInnerMessage,
-//		MethodName: methodName,
-//		Data:       data,
-//	}
-//}
-
-func NewNetworkMessage(Id uint16, Data []byte) *NetworkMessage {
-	return &NetworkMessage{
-		Id:   Id,
-		Data: Data,
-	}
-}
-
-func NewErrCodeMessage(Id uint16, err *Error) *NetworkMessage {
-	return &NetworkMessage{
-		Id:      Id,
-		ErrCode: err.Id,
 	}
 }

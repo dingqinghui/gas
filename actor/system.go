@@ -257,7 +257,9 @@ func (s *System) spawn(producer api.ActorProducer, params interface{}, opts ...a
 
 	mb.RegisterHandlers(context, getDispatcher(opt))
 	// notify actor start
-	message := api.BuildInitMessage()
+	message := &api.Message{
+		Method: api.InitFuncName,
+	}
 	if err := process.PostMessage(message); err != nil {
 		return nil, err
 	}

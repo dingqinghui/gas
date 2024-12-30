@@ -80,7 +80,10 @@ func (p *ProcessActor) Stop() *api.Error {
 	if err := p.BuiltinStopper.Stop(); err != nil {
 		return err
 	}
-	rsp := p.PostMessageAndWait(api.BuildStopMessage())
+	message := &api.Message{
+		Method: api.StopFuncName,
+	}
+	rsp := p.PostMessageAndWait(message)
 	if !api.IsOk(rsp.Err) {
 		return rsp.Err
 	}
